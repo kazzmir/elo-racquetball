@@ -1,5 +1,7 @@
 This is a website for computing and displaying the ELO ratings of players in the professional sport of racquetball. Assume a new player starts with an ELO of 1000. Use the standard ELO formula that is used in Chess FIDE to compute ELO. There does not need to be a backend for the website, just a frontend consisting of html/javascript/css that computes the ELO ratings and displays them. The input data can be hardcoded in a file that is loaded dynamically by javascript. Use tailwind css and jquery as needed.
 
+Include a button on the website that will filter by recent players, where a recent player is one that played a match within the last 12 months.
+
 Use golang for converting the input html data into a form that can be easily consumed by the frontend. The golang code should read the input html file, extract the relevant data (players, winners, dates), and output a JSON file that can be loaded by the frontend.
 
 A definition of the formula can be found here:

@@ -50,7 +50,10 @@
           <h2 class="text-2xl font-bold text-white">Current Standings</h2>
           <p id="standings-subtitle" class="text-sm text-gray-400 mt-1"></p>
         </div>
-        <div class="relative">
+        <div class="flex items-center gap-2">
+          <button id="btn-recent" class="px-4 py-2 rounded-lg text-sm font-medium border border-gray-600 text-gray-300 hover:bg-gray-700 transition-colors">
+            🕐 Recent Players
+          </button>
           <input id="search-player" type="text" placeholder="Search player…"
             class="bg-gray-800 border border-gray-600 rounded-lg px-4 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 w-48">
         </div>
@@ -219,9 +222,27 @@
   // ─────────────────────────────────────────────
   let standingsData = [];
   let sortCol = 'elo', sortDir = -1;
+  let recentOnly = false;
+
+  function parseMDY(s) {
+    if (!s) return null;
+    const [m, d, y] = s.split('/').map(Number);
+    return new Date(y, m - 1, d);
+  }
+
+  function isRecent(lastDate) {
+    const d = parseMDY(lastDate);
+    if (!d) return false;
+    const cutoff = new Date();
+    cutoff.setFullYear(cutoff.getFullYear() - 1);
+    return d >= cutoff;
+  }
 
   function renderStandings(filter) {
     let rows = standingsData.slice();
+    if (recentOnly) {
+      rows = rows.filter(r => isRecent(r.lastDate));
+    }
     if (filter) {
       const q = filter.toLowerCase();
       rows = rows.filter(r => r.name.toLowerCase().includes(q));
@@ -232,9 +253,16 @@
       return sortDir * (va - vb);
     });
 
+    const totalPlayers = standingsData.length;
+    const recentCount = standingsData.filter(r => isRecent(r.lastDate)).length;
+    if (recentOnly) {
+      $('#standings-subtitle').text(`Showing ${rows.length} recent players (active in last 12 months) · ${totalPlayers} total`);
+    } else {
+      $('#standings-subtitle').text(`${totalPlayers} players · ${recentCount} active in last 12 months`);
+    }
+
     const tbody = $('#standings-body').empty();
-    rows.forEach((r, i) => {
-      const pct = r.games > 0 ? (r.wins / r.games * 100).toFixed(1) : '0.0';
+    rows.forEach((r, i) => {      const pct = r.games > 0 ? (r.wins / r.games * 100).toFixed(1) : '0.0';
       const tr = $(`<tr class="clickable border-t border-gray-800 hover:bg-gray-800 transition-colors"
                         data-player="${escHtml(r.name)}">
         <td class="px-4 py-3 text-gray-500">${i + 1}</td>
@@ -430,6 +458,17 @@
     $('#tab-standings').on('click', () => showTab('standings'));
     $('#tab-matches').on('click', () => showTab('matches'));
 
+    // Recent filter toggle
+    $('#btn-recent').on('click', function () {
+      recentOnly = !recentOnly;
+      if (recentOnly) {
+        $(this).addClass('bg-blue-600 border-blue-500 text-white').removeClass('border-gray-600 text-gray-300');
+      } else {
+        $(this).removeClass('bg-blue-600 border-blue-500 text-white').addClass('border-gray-600 text-gray-300');
+      }
+      renderStandings($('#search-player').val());
+    });
+
     // Search
     $('#search-player').on('input', function () {
       renderStandings($(this).val());
@@ -478,9 +517,7 @@
           lastDate: r.lastDate,
         }));
 
-        const playerCount = standingsData.length;
         const matchCount = matchResults.length;
-        $('#standings-subtitle').text(`${playerCount} players · ${matchCount} matches`);
         $('#match-count').text(`${matchCount} total matches`);
 
         renderStandings();
