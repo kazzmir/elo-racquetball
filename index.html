@@ -281,8 +281,8 @@
       w.lastDate = m.date;
       l.lastDate = m.date;
 
-      w.history.push({ date: m.date, elo: newRa, opponent: m.loser, won: true });
-      l.history.push({ date: m.date, elo: newRb, opponent: m.winner, won: false });
+      w.history.push({ date: m.date, elo: newRa, delta: deltaW, opponent: m.loser, won: true });
+      l.history.push({ date: m.date, elo: newRb, delta: deltaL, opponent: m.winner, won: false });
 
       matchResults.push({
         date: m.date,
@@ -451,13 +451,18 @@
     const reversed = p.history.slice().reverse();
     reversed.forEach(h => {
       const won = h.won;
+      const deltaStr = h.delta >= 0 ? `+${h.delta}` : `${h.delta}`;
+      const deltaCls = h.delta > 0 ? 'text-green-400' : h.delta < 0 ? 'text-red-400' : 'text-gray-500';
       matchesDiv.append(`<div class="flex items-center justify-between px-4 py-2 rounded-lg bg-gray-800 text-sm">
         <div class="flex items-center gap-3">
           <span class="px-2 py-0.5 rounded text-xs font-bold ${won ? 'bg-green-900 text-green-300' : 'bg-red-900 text-red-300'}">${won ? 'W' : 'L'}</span>
           <span class="text-gray-400 text-xs">${h.date}</span>
           <span class="text-white">${escHtml(h.opponent)}</span>
         </div>
-        <span class="${eloColor(h.elo)} font-mono">${h.elo}</span>
+        <div class="flex items-center gap-3 font-mono text-xs">
+          <span class="${deltaCls}">${deltaStr}</span>
+          <span class="${eloColor(h.elo)}">${h.elo}</span>
+        </div>
       </div>`);
     });
 
