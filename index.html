@@ -52,6 +52,9 @@
           <p id="standings-subtitle" class="text-sm text-gray-400 mt-1"></p>
         </div>
         <div class="flex items-center gap-2">
+          <button id="btn-peak" class="px-4 py-2 rounded-lg text-sm font-medium border border-gray-600 text-gray-300 hover:bg-gray-700 transition-colors">
+            🏆 Peak ELO
+          </button>
           <button id="btn-recent" class="px-4 py-2 rounded-lg text-sm font-medium border border-gray-600 text-gray-300 hover:bg-gray-700 transition-colors">
             🕐 Recent Players
           </button>
@@ -66,6 +69,7 @@
               <th class="px-4 py-3 text-left w-12">#</th>
               <th class="px-4 py-3 text-left sortable cursor-pointer hover:text-white" data-col="name">Player ↕</th>
               <th class="px-4 py-3 text-right sortable cursor-pointer hover:text-white" data-col="elo">ELO ↕</th>
+              <th id="th-peak" class="hidden px-4 py-3 text-right sortable cursor-pointer hover:text-white" data-col="peakElo">Peak ELO ↕</th>
               <th class="px-4 py-3 text-right sortable cursor-pointer hover:text-white" data-col="wins">Wins ↕</th>
               <th class="px-4 py-3 text-right sortable cursor-pointer hover:text-white" data-col="losses">Losses ↕</th>
               <th class="px-4 py-3 text-right sortable cursor-pointer hover:text-white" data-col="winpct">Win% ↕</th>
@@ -253,7 +257,7 @@
 
     function getPlayer(name) {
       if (!ratings[name]) {
-        ratings[name] = { elo: INITIAL_ELO, wins: 0, losses: 0, history: [], lastDate: null };
+        ratings[name] = { elo: INITIAL_ELO, peakElo: INITIAL_ELO, wins: 0, losses: 0, history: [], lastDate: null };
       }
       return ratings[name];
     }
@@ -279,6 +283,8 @@
 
       w.elo = newRa;
       l.elo = newRb;
+      if (newRa > w.peakElo) w.peakElo = newRa;
+      if (newRb > l.peakElo) l.peakElo = newRb;
       w.wins++;
       l.losses++;
       w.lastDate = m.date;
@@ -328,6 +334,7 @@
   let standingsData = [];
   let sortCol = 'elo', sortDir = -1;
   let recentOnly = false;
+  let showPeak = false;
 
   function parseMDY(s) {
     if (!s) return null;
@@ -368,11 +375,15 @@
 
     const tbody = $('#standings-body').empty();
     rows.forEach((r, i) => {      const pct = r.games > 0 ? (r.wins / r.games * 100).toFixed(1) : '0.0';
+      const peakCell = showPeak
+        ? `<td class="px-4 py-3 text-right text-lg ${eloColor(r.peakElo)}">${r.peakElo}</td>`
+        : '';
       const tr = $(`<tr class="clickable border-t border-gray-800 hover:bg-gray-800 transition-colors"
                         data-player="${escHtml(r.name)}">
         <td class="px-4 py-3 text-gray-500">${i + 1}</td>
         <td class="px-4 py-3 font-medium text-white">${escHtml(r.name)}</td>
         <td class="px-4 py-3 text-right text-lg ${eloColor(r.elo)}">${r.elo}</td>
+        ${peakCell}
         <td class="px-4 py-3 text-right text-green-400">${r.wins}</td>
         <td class="px-4 py-3 text-right text-red-400">${r.losses}</td>
         <td class="px-4 py-3 text-right">${pct}%</td>
@@ -745,6 +756,21 @@
     $('#tab-matches').on('click', () => showTab('matches'));
     $('#tab-matchup').on('click', () => showTab('matchup'));
 
+    // Peak ELO toggle
+    $('#btn-peak').on('click', function () {
+      showPeak = !showPeak;
+      if (showPeak) {
+        $(this).addClass('bg-yellow-600 border-yellow-500 text-white').removeClass('border-gray-600 text-gray-300');
+        $('#th-peak').removeClass('hidden');
+        if (sortCol === 'elo') { sortCol = 'peakElo'; }
+      } else {
+        $(this).removeClass('bg-yellow-600 border-yellow-500 text-white').addClass('border-gray-600 text-gray-300');
+        $('#th-peak').addClass('hidden');
+        if (sortCol === 'peakElo') { sortCol = 'elo'; }
+      }
+      renderStandings($('#search-player').val());
+    });
+
     // Recent filter toggle
     $('#btn-recent').on('click', function () {
       recentOnly = !recentOnly;
@@ -803,6 +829,7 @@
         standingsData = Object.entries(ratings).map(([name, r]) => ({
           name,
           elo: r.elo,
+          peakElo: r.peakElo,
           wins: r.wins,
           losses: r.losses,
           games: r.wins + r.losses,
