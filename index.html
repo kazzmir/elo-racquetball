@@ -602,9 +602,15 @@
       }
     });
 
-    // Load data
-    $.getJSON('matches.json')
-      .done(function (matches) {
+    // Load data — fetch matches.json.gz and decompress in-browser
+    async function loadMatches() {
+      try {
+        const response = await fetch('matches.json.gz');
+        if (!response.ok) throw new Error(`HTTP ${response.status} ${response.statusText}`);
+        const ds = new DecompressionStream('gzip');
+        const decompressed = response.body.pipeThrough(ds);
+        const matches = await new Response(decompressed).json();
+
         const { ratings, matchResults } = computeElo(matches);
         allRatings = ratings;
         allMatchResults = matchResults;
@@ -637,12 +643,13 @@
         setupMatchupSearch('b');
         $('#matchup-clear-a').on('click', () => clearMatchupPlayer('a'));
         $('#matchup-clear-b').on('click', () => clearMatchupPlayer('b'));
-      })
-      .fail(function (xhr) {
+      } catch (err) {
         $('#loading').addClass('hidden');
-        $('#error-msg').text(`Failed to load matches.json: ${xhr.statusText}. Serve this page from a web server.`);
+        $('#error-msg').text(`Failed to load matches.json.gz: ${err.message}. Serve this page from a web server.`);
         $('#error').removeClass('hidden');
-      });
+      }
+    }
+    loadMatches();
   });
   // ─────────────────────────────────────────────
   // Matchup Calculator

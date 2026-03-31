@@ -1,8 +1,10 @@
 package main
 
 import (
+	"compress/gzip"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"sort"
 	"strings"
@@ -62,7 +64,14 @@ func main() {
 	}
 	defer out.Close()
 
-	enc := json.NewEncoder(out)
+	var w io.Writer = out
+	if strings.HasSuffix(outputPath, ".gz") {
+		gz := gzip.NewWriter(out)
+		defer gz.Close()
+		w = gz
+	}
+
+	enc := json.NewEncoder(w)
 	enc.SetIndent("", "  ")
 	if err := enc.Encode(matches); err != nil {
 		fmt.Fprintf(os.Stderr, "Error encoding JSON: %v\n", err)

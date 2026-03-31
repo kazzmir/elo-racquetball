@@ -16,6 +16,7 @@ import math
 import subprocess
 import sys
 from pathlib import Path
+import gzip
 
 INITIAL_ELO = 1000
 
@@ -102,7 +103,8 @@ def main():
         parse_html(output_json, html_files)
 
     try:
-        with open(output_json) as f:
+        opener = gzip.open if output_json.endswith('.gz') else open
+        with opener(output_json, 'rt') as f:
             matches = json.load(f)
     except FileNotFoundError:
         sys.exit(f"Error: {output_json} not found. Provide HTML files to generate it.")
