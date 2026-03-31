@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pro Racquetball ELO Ratings</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <style>
+    [x-cloak] { display: none; }
+    .sparkline { display: inline-block; vertical-align: middle; }
+    tr.clickable:hover { cursor: pointer; }
+  </style>
+</head>
+<body class="bg-gray-950 text-gray-100 min-h-screen">
+
+  <!-- Header -->
+  <header class="bg-gray-900 border-b border-gray-700 sticky top-0 z-10 shadow-lg">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <span class="text-2xl">🏸</span>
+        <h1 class="text-xl font-bold text-white">Pro Racquetball ELO Ratings</h1>
+      </div>
+      <nav class="flex gap-1">
+        <button id="tab-standings" class="tab-btn px-4 py-2 rounded-md text-sm font-medium bg-blue-600 text-white">Standings</button>
+        <button id="tab-matches" class="tab-btn px-4 py-2 rounded-md text-sm font-medium text-gray-300 hover:bg-gray-700">Match History</button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="max-w-7xl mx-auto px-4 py-6">
+
+    <!-- Loading state -->
+    <div id="loading" class="text-center py-20 text-gray-400">
+      <div class="text-4xl mb-4">⏳</div>
+      <p class="text-lg">Loading match data…</p>
+    </div>
+
+    <!-- Error state -->
+    <div id="error" class="hidden text-center py-20 text-red-400">
+      <div class="text-4xl mb-4">❌</div>
+      <p id="error-msg" class="text-lg"></p>
+    </div>
+
+    <!-- Standings Tab -->
+    <div id="view-standings" class="hidden">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h2 class="text-2xl font-bold text-white">Current Standings</h2>
+          <p id="standings-subtitle" class="text-sm text-gray-400 mt-1"></p>
+        </div>
+        <div class="relative">
+          <input id="search-player" type="text" placeholder="Search player…"
+            class="bg-gray-800 border border-gray-600 rounded-lg px-4 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 w-48">
+        </div>
+      </div>
+      <div class="bg-gray-900 rounded-xl border border-gray-700 overflow-hidden shadow-xl">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="bg-gray-800 text-gray-400 uppercase text-xs tracking-wide">
+              <th class="px-4 py-3 text-left w-12">#</th>
+              <th class="px-4 py-3 text-left sortable cursor-pointer hover:text-white" data-col="name">Player ↕</th>
+              <th class="px-4 py-3 text-right sortable cursor-pointer hover:text-white" data-col="elo">ELO ↕</th>
+              <th class="px-4 py-3 text-right sortable cursor-pointer hover:text-white" data-col="wins">Wins ↕</th>
+              <th class="px-4 py-3 text-right sortable cursor-pointer hover:text-white" data-col="losses">Losses ↕</th>
+              <th class="px-4 py-3 text-right sortable cursor-pointer hover:text-white" data-col="winpct">Win% ↕</th>
+              <th class="px-4 py-3 text-right">Games</th>
+              <th class="px-4 py-3 text-right">Last Match</th>
+            </tr>
+          </thead>
+          <tbody id="standings-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Match History Tab -->
+    <div id="view-matches" class="hidden">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-2xl font-bold text-white">Match History</h2>
+        <span id="match-count" class="text-sm text-gray-400"></span>
+      </div>
+      <div class="bg-gray-900 rounded-xl border border-gray-700 overflow-hidden shadow-xl">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="bg-gray-800 text-gray-400 uppercase text-xs tracking-wide">
+              <th class="px-4 py-3 text-left">#</th>
+              <th class="px-4 py-3 text-left">Date</th>
+              <th class="px-4 py-3 text-left">Winner</th>
+              <th class="px-4 py-3 text-right">ELO After</th>
+              <th class="px-4 py-3 text-left">Loser</th>
+              <th class="px-4 py-3 text-right">ELO After</th>
+              <th class="px-4 py-3 text-right">Winner Δ</th>
+              <th class="px-4 py-3 text-right">Loser Δ</th>
+            </tr>
+          </thead>
+          <tbody id="matches-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Player Detail Panel (slide in) -->
+    <div id="player-panel" class="hidden fixed inset-0 bg-black/60 z-20 flex justify-end">
+      <div class="bg-gray-900 w-full max-w-2xl h-full overflow-y-auto shadow-2xl border-l border-gray-700 flex flex-col">
+        <div class="flex items-center justify-between p-5 border-b border-gray-700 sticky top-0 bg-gray-900 z-10">
+          <h3 id="player-name" class="text-xl font-bold text-white"></h3>
+          <button id="close-panel" class="text-gray-400 hover:text-white text-2xl leading-none">&times;</button>
+        </div>
+        <div class="p-5 flex-1">
+          <!-- Stats row -->
+          <div id="player-stats" class="grid grid-cols-3 gap-3 mb-6"></div>
+          <!-- Mini chart -->
+          <div class="mb-6">
+            <h4 class="text-sm font-semibold text-gray-400 uppercase mb-3">ELO Over Time</h4>
+            <canvas id="elo-chart" class="w-full" height="160"></canvas>
+          </div>
+          <!-- Match history -->
+          <h4 class="text-sm font-semibold text-gray-400 uppercase mb-3">Match History</h4>
+          <div id="player-matches" class="space-y-2"></div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <script>
+  // ─────────────────────────────────────────────
+  // ELO Engine
+  // ─────────────────────────────────────────────
+  const INITIAL_ELO = 1000;
+
+  function kFactor(elo, games) {
+    if (games < 30) return 40;
+    if (elo < 2400) return 20;
+    return 10;
+  }
+
+  function expectedScore(ra, rb) {
+    return 1 / (1 + Math.pow(10, (rb - ra) / 400));
+  }
+
+  function computeElo(matches) {
+    // ratings[player] = { elo, wins, losses, history: [{date, elo, opponent, won}], lastDate }
+    const ratings = {};
+
+    function getPlayer(name) {
+      if (!ratings[name]) {
+        ratings[name] = { elo: INITIAL_ELO, wins: 0, losses: 0, history: [], lastDate: null };
+      }
+      return ratings[name];
+    }
+
+    const matchResults = [];
+
+    for (const m of matches) {
+      const w = getPlayer(m.winner);
+      const l = getPlayer(m.loser);
+
+      const ra = w.elo, rb = l.elo;
+      const ea = expectedScore(ra, rb);
+      const eb = expectedScore(rb, ra);
+
+      const ka = kFactor(ra, w.wins + w.losses);
+      const kb = kFactor(rb, l.wins + l.losses);
+
+      const newRa = Math.round(ra + ka * (1 - ea));
+      const newRb = Math.round(rb + kb * (0 - eb));
+
+      const deltaW = newRa - ra;
+      const deltaL = newRb - rb;
+
+      w.elo = newRa;
+      l.elo = newRb;
+      w.wins++;
+      l.losses++;
+      w.lastDate = m.date;
+      l.lastDate = m.date;
+
+      w.history.push({ date: m.date, elo: newRa, opponent: m.loser, won: true });
+      l.history.push({ date: m.date, elo: newRb, opponent: m.winner, won: false });
+
+      matchResults.push({
+        date: m.date,
+        winner: m.winner,
+        loser: m.loser,
+        winnerElo: newRa,
+        loserElo: newRb,
+        deltaWinner: deltaW,
+        deltaLoser: deltaL,
+      });
+    }
+
+    return { ratings, matchResults };
+  }
+
+  // ─────────────────────────────────────────────
+  // UI Helpers
+  // ─────────────────────────────────────────────
+  function deltaClass(d) {
+    if (d > 0) return 'text-green-400';
+    if (d < 0) return 'text-red-400';
+    return 'text-gray-500';
+  }
+
+  function deltaStr(d) {
+    if (d > 0) return `+${d}`;
+    return `${d}`;
+  }
+
+  function eloColor(elo) {
+    if (elo >= 1800) return 'text-yellow-400 font-bold';
+    if (elo >= 1400) return 'text-blue-400';
+    if (elo >= 1100) return 'text-green-400';
+    return 'text-gray-400';
+  }
+
+  // ─────────────────────────────────────────────
+  // Standings
+  // ─────────────────────────────────────────────
+  let standingsData = [];
+  let sortCol = 'elo', sortDir = -1;
+
+  function renderStandings(filter) {
+    let rows = standingsData.slice();
+    if (filter) {
+      const q = filter.toLowerCase();
+      rows = rows.filter(r => r.name.toLowerCase().includes(q));
+    }
+    rows.sort((a, b) => {
+      let va = a[sortCol], vb = b[sortCol];
+      if (typeof va === 'string') return sortDir * va.localeCompare(vb);
+      return sortDir * (va - vb);
+    });
+
+    const tbody = $('#standings-body').empty();
+    rows.forEach((r, i) => {
+      const pct = r.games > 0 ? (r.wins / r.games * 100).toFixed(1) : '0.0';
+      const tr = $(`<tr class="clickable border-t border-gray-800 hover:bg-gray-800 transition-colors"
+                        data-player="${escHtml(r.name)}">
+        <td class="px-4 py-3 text-gray-500">${i + 1}</td>
+        <td class="px-4 py-3 font-medium text-white">${escHtml(r.name)}</td>
+        <td class="px-4 py-3 text-right text-lg ${eloColor(r.elo)}">${r.elo}</td>
+        <td class="px-4 py-3 text-right text-green-400">${r.wins}</td>
+        <td class="px-4 py-3 text-right text-red-400">${r.losses}</td>
+        <td class="px-4 py-3 text-right">${pct}%</td>
+        <td class="px-4 py-3 text-right text-gray-400">${r.games}</td>
+        <td class="px-4 py-3 text-right text-gray-500 text-xs">${r.lastDate || '—'}</td>
+      </tr>`);
+      tbody.append(tr);
+    });
+  }
+
+  // ─────────────────────────────────────────────
+  // Match History
+  // ─────────────────────────────────────────────
+  const PAGE_SIZE = 100;
+  let matchPage = 0;
+  let allMatchResults = [];
+
+  function renderMatchPage() {
+    const start = matchPage * PAGE_SIZE;
+    const slice = allMatchResults.slice(start, start + PAGE_SIZE);
+    const tbody = matchPage === 0 ? $('#matches-body').empty() : $('#matches-body');
+
+    slice.forEach((m, idx) => {
+      const num = allMatchResults.length - start - idx;
+      tbody.append(`<tr class="border-t border-gray-800 hover:bg-gray-800 transition-colors">
+        <td class="px-4 py-2 text-gray-600 text-xs">${num}</td>
+        <td class="px-4 py-2 text-gray-400 text-xs whitespace-nowrap">${m.date}</td>
+        <td class="px-4 py-2 font-medium text-white clickable hover:text-blue-400" data-player="${escHtml(m.winner)}">${escHtml(m.winner)}</td>
+        <td class="px-4 py-2 text-right ${eloColor(m.winnerElo)}">${m.winnerElo}</td>
+        <td class="px-4 py-2 text-gray-300 clickable hover:text-blue-400" data-player="${escHtml(m.loser)}">${escHtml(m.loser)}</td>
+        <td class="px-4 py-2 text-right ${eloColor(m.loserElo)}">${m.loserElo}</td>
+        <td class="px-4 py-2 text-right text-xs ${deltaClass(m.deltaWinner)}">${deltaStr(m.deltaWinner)}</td>
+        <td class="px-4 py-2 text-right text-xs ${deltaClass(m.deltaLoser)}">${deltaStr(m.deltaLoser)}</td>
+      </tr>`);
+    });
+
+    if (start + PAGE_SIZE < allMatchResults.length) {
+      if ($('#load-more').length === 0) {
+        const btn = $('<tr id="load-more"><td colspan="8" class="text-center py-3"><button class="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded text-sm text-gray-300">Load more…</button></td></tr>');
+        btn.on('click', () => { matchPage++; btn.remove(); renderMatchPage(); });
+        $('#matches-body').append(btn);
+      }
+    }
+  }
+
+  // ─────────────────────────────────────────────
+  // Player Detail Panel
+  // ─────────────────────────────────────────────
+  let allRatings = {};
+
+  function showPlayer(name) {
+    const p = allRatings[name];
+    if (!p) return;
+
+    $('#player-name').text(name);
+
+    const games = p.wins + p.losses;
+    const pct = games > 0 ? (p.wins / games * 100).toFixed(1) : '0.0';
+
+    const stats = [
+      { label: 'Current ELO', value: p.elo, cls: eloColor(p.elo) },
+      { label: 'Record', value: `${p.wins}W–${p.losses}L`, cls: 'text-white' },
+      { label: 'Win Rate', value: `${pct}%`, cls: pct >= 50 ? 'text-green-400' : 'text-red-400' },
+    ];
+
+    const statsDiv = $('#player-stats').empty();
+    stats.forEach(s => {
+      statsDiv.append(`<div class="bg-gray-800 rounded-lg p-4 text-center">
+        <div class="text-2xl font-bold ${s.cls}">${s.value}</div>
+        <div class="text-xs text-gray-500 mt-1 uppercase tracking-wide">${s.label}</div>
+      </div>`);
+    });
+
+    // Draw ELO chart
+    drawChart(p.history);
+
+    // Match list (most recent first)
+    const matchesDiv = $('#player-matches').empty();
+    const reversed = p.history.slice().reverse();
+    reversed.forEach(h => {
+      const won = h.won;
+      matchesDiv.append(`<div class="flex items-center justify-between px-4 py-2 rounded-lg bg-gray-800 text-sm">
+        <div class="flex items-center gap-3">
+          <span class="px-2 py-0.5 rounded text-xs font-bold ${won ? 'bg-green-900 text-green-300' : 'bg-red-900 text-red-300'}">${won ? 'W' : 'L'}</span>
+          <span class="text-gray-400 text-xs">${h.date}</span>
+          <span class="text-white">${escHtml(h.opponent)}</span>
+        </div>
+        <span class="${eloColor(h.elo)} font-mono">${h.elo}</span>
+      </div>`);
+    });
+
+    $('#player-panel').removeClass('hidden');
+    $('body').addClass('overflow-hidden');
+  }
+
+  function drawChart(history) {
+    const canvas = document.getElementById('elo-chart');
+    const ctx = canvas.getContext('2d');
+    const dpr = window.devicePixelRatio || 1;
+    const w = canvas.parentElement.clientWidth;
+    const h = 160;
+    canvas.width = w * dpr;
+    canvas.height = h * dpr;
+    canvas.style.width = w + 'px';
+    canvas.style.height = h + 'px';
+    ctx.scale(dpr, dpr);
+
+    if (history.length < 2) {
+      ctx.fillStyle = '#6b7280';
+      ctx.font = '14px sans-serif';
+      ctx.fillText('Not enough data', 20, h / 2);
+      return;
+    }
+
+    const elos = history.map(h => h.elo);
+    const minElo = Math.min(...elos) - 20;
+    const maxElo = Math.max(...elos) + 20;
+    const pad = { top: 10, right: 10, bottom: 20, left: 45 };
+    const chartW = w - pad.left - pad.right;
+    const chartH = h - pad.top - pad.bottom;
+
+    ctx.clearRect(0, 0, w, h);
+
+    // Grid lines
+    ctx.strokeStyle = '#374151';
+    ctx.lineWidth = 1;
+    for (let i = 0; i <= 4; i++) {
+      const y = pad.top + (chartH / 4) * i;
+      ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(pad.left + chartW, y); ctx.stroke();
+      const label = Math.round(maxElo - (maxElo - minElo) * (i / 4));
+      ctx.fillStyle = '#6b7280';
+      ctx.font = '10px monospace';
+      ctx.textAlign = 'right';
+      ctx.fillText(label, pad.left - 5, y + 4);
+    }
+
+    // Line
+    ctx.beginPath();
+    ctx.strokeStyle = '#3b82f6';
+    ctx.lineWidth = 2;
+    history.forEach((p, i) => {
+      const x = pad.left + (i / (history.length - 1)) * chartW;
+      const y = pad.top + (1 - (p.elo - minElo) / (maxElo - minElo)) * chartH;
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+
+    // Fill under line
+    ctx.beginPath();
+    history.forEach((p, i) => {
+      const x = pad.left + (i / (history.length - 1)) * chartW;
+      const y = pad.top + (1 - (p.elo - minElo) / (maxElo - minElo)) * chartH;
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    });
+    ctx.lineTo(pad.left + chartW, pad.top + chartH);
+    ctx.lineTo(pad.left, pad.top + chartH);
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(59,130,246,0.15)';
+    ctx.fill();
+  }
+
+  // ─────────────────────────────────────────────
+  // Escape HTML helper
+  // ─────────────────────────────────────────────
+  function escHtml(s) {
+    return String(s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  // ─────────────────────────────────────────────
+  // Tab switching
+  // ─────────────────────────────────────────────
+  function showTab(tab) {
+    $('.tab-btn').removeClass('bg-blue-600 text-white').addClass('text-gray-300 hover:bg-gray-700');
+    $(`#tab-${tab}`).addClass('bg-blue-600 text-white').removeClass('text-gray-300 hover:bg-gray-700');
+    $('#view-standings, #view-matches').addClass('hidden');
+    $(`#view-${tab}`).removeClass('hidden');
+  }
+
+  // ─────────────────────────────────────────────
+  // Bootstrap
+  // ─────────────────────────────────────────────
+  $(function () {
+    // Tab buttons
+    $('#tab-standings').on('click', () => showTab('standings'));
+    $('#tab-matches').on('click', () => showTab('matches'));
+
+    // Search
+    $('#search-player').on('input', function () {
+      renderStandings($(this).val());
+    });
+
+    // Sort headers
+    $(document).on('click', '.sortable', function () {
+      const col = $(this).data('col');
+      if (sortCol === col) { sortDir *= -1; } else { sortCol = col; sortDir = -1; }
+      renderStandings($('#search-player').val());
+    });
+
+    // Player click (standings or matches)
+    $(document).on('click', '[data-player]', function (e) {
+      e.stopPropagation();
+      showPlayer($(this).data('player'));
+    });
+
+    // Close panel
+    $('#close-panel').on('click', () => {
+      $('#player-panel').addClass('hidden');
+      $('body').removeClass('overflow-hidden');
+    });
+    $('#player-panel').on('click', function (e) {
+      if (e.target === this) {
+        $(this).addClass('hidden');
+        $('body').removeClass('overflow-hidden');
+      }
+    });
+
+    // Load data
+    $.getJSON('matches.json')
+      .done(function (matches) {
+        const { ratings, matchResults } = computeElo(matches);
+        allRatings = ratings;
+        allMatchResults = matchResults;
+
+        // Build standings array
+        standingsData = Object.entries(ratings).map(([name, r]) => ({
+          name,
+          elo: r.elo,
+          wins: r.wins,
+          losses: r.losses,
+          games: r.wins + r.losses,
+          winpct: r.wins / (r.wins + r.losses || 1),
+          lastDate: r.lastDate,
+        }));
+
+        const playerCount = standingsData.length;
+        const matchCount = matchResults.length;
+        $('#standings-subtitle').text(`${playerCount} players · ${matchCount} matches`);
+        $('#match-count').text(`${matchCount} total matches`);
+
+        renderStandings();
+
+        // Matches (newest first)
+        allMatchResults = matchResults.slice().reverse();
+        renderMatchPage();
+
+        $('#loading').addClass('hidden');
+        showTab('standings');
+      })
+      .fail(function (xhr) {
+        $('#loading').addClass('hidden');
+        $('#error-msg').text(`Failed to load matches.json: ${xhr.statusText}. Serve this page from a web server.`);
+        $('#error').removeClass('hidden');
+      });
+  });
+  </script>
+</body>
+</html>
