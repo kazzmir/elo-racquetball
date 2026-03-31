@@ -217,7 +217,10 @@
           <!-- Mini chart -->
           <div class="mb-6">
             <h4 class="text-sm font-semibold text-gray-400 uppercase mb-3">ELO Over Time</h4>
-            <canvas id="elo-chart" class="w-full" height="160"></canvas>
+            <div class="relative">
+              <canvas id="elo-chart" class="w-full rounded-lg"></canvas>
+              <div id="elo-tooltip" class="hidden absolute pointer-events-none bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 text-xs shadow-xl z-10 whitespace-nowrap"></div>
+            </div>
           </div>
           <!-- Match history -->
           <h4 class="text-sm font-semibold text-gray-400 uppercase mb-3">Match History</h4>
@@ -443,9 +446,6 @@
       </div>`);
     });
 
-    // Draw ELO chart
-    drawChart(p.history);
-
     // Match list (most recent first)
     const matchesDiv = $('#player-matches').empty();
     const reversed = p.history.slice().reverse();
@@ -466,74 +466,253 @@
       </div>`);
     });
 
+    // Show panel first so the canvas has a real clientWidth, then draw
     $('#player-panel').removeClass('hidden');
     $('body').addClass('overflow-hidden');
+    requestAnimationFrame(() => drawChart(p.history));
   }
 
   function drawChart(history) {
     const canvas = document.getElementById('elo-chart');
-    const ctx = canvas.getContext('2d');
+    const tooltip = document.getElementById('elo-tooltip');
     const dpr = window.devicePixelRatio || 1;
     const w = canvas.parentElement.clientWidth;
-    const h = 160;
+    const h = 260;
     canvas.width = w * dpr;
     canvas.height = h * dpr;
     canvas.style.width = w + 'px';
     canvas.style.height = h + 'px';
+    const ctx = canvas.getContext('2d');
     ctx.scale(dpr, dpr);
 
+    // Remove old listeners by cloning
+    const fresh = canvas.cloneNode(true);
+    canvas.parentElement.replaceChild(fresh, canvas);
+    const c = fresh;
+    const ctx2 = c.getContext('2d');
+    ctx2.scale(dpr, dpr);
+
     if (history.length < 2) {
-      ctx.fillStyle = '#6b7280';
-      ctx.font = '14px sans-serif';
-      ctx.fillText('Not enough data', 20, h / 2);
+      ctx2.fillStyle = '#6b7280';
+      ctx2.font = '14px sans-serif';
+      ctx2.textAlign = 'left';
+      ctx2.fillText('Not enough data', 20, h / 2);
       return;
     }
 
-    const elos = history.map(h => h.elo);
-    const minElo = Math.min(...elos) - 20;
-    const maxElo = Math.max(...elos) + 20;
-    const pad = { top: 10, right: 10, bottom: 20, left: 45 };
+    const pad = { top: 16, right: 16, bottom: 40, left: 50 };
     const chartW = w - pad.left - pad.right;
     const chartH = h - pad.top - pad.bottom;
 
-    ctx.clearRect(0, 0, w, h);
+    const elos = history.map(p => p.elo);
+    const rawMin = Math.min(...elos), rawMax = Math.max(...elos);
+    const eloRange = rawMax - rawMin || 100;
+    const minElo = rawMin - eloRange * 0.08;
+    const maxElo = rawMax + eloRange * 0.08;
 
-    // Grid lines
-    ctx.strokeStyle = '#374151';
-    ctx.lineWidth = 1;
-    for (let i = 0; i <= 4; i++) {
-      const y = pad.top + (chartH / 4) * i;
-      ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(pad.left + chartW, y); ctx.stroke();
-      const label = Math.round(maxElo - (maxElo - minElo) * (i / 4));
-      ctx.fillStyle = '#6b7280';
-      ctx.font = '10px monospace';
-      ctx.textAlign = 'right';
-      ctx.fillText(label, pad.left - 5, y + 4);
+    // Parse dates for X axis
+    const dates = history.map(p => {
+      const [m, d, y] = p.date.split('/').map(Number);
+      return new Date(y, m - 1, d).getTime();
+    });
+    const minDate = Math.min(...dates), maxDate = Math.max(...dates);
+    const dateRange = maxDate - minDate || 1;
+
+    function xOf(ts)  { return pad.left + ((ts - minDate) / dateRange) * chartW; }
+    function yOf(elo) { return pad.top + (1 - (elo - minElo) / (maxElo - minElo)) * chartH; }
+
+    ctx2.clearRect(0, 0, w, h);
+
+    // ── Horizontal grid lines + Y labels ──
+    const yTicks = 5;
+    for (let i = 0; i <= yTicks; i++) {
+      const elo = minElo + (maxElo - minElo) * (1 - i / yTicks);
+      const y = yOf(elo);
+      ctx2.strokeStyle = '#1f2937';
+      ctx2.lineWidth = 1;
+      ctx2.beginPath(); ctx2.moveTo(pad.left, y); ctx2.lineTo(pad.left + chartW, y); ctx2.stroke();
+      ctx2.fillStyle = '#6b7280';
+      ctx2.font = '10px monospace';
+      ctx2.textAlign = 'right';
+      ctx2.fillText(Math.round(elo), pad.left - 6, y + 3.5);
     }
 
-    // Line
-    ctx.beginPath();
-    ctx.strokeStyle = '#3b82f6';
-    ctx.lineWidth = 2;
-    history.forEach((p, i) => {
-      const x = pad.left + (i / (history.length - 1)) * chartW;
-      const y = pad.top + (1 - (p.elo - minElo) / (maxElo - minElo)) * chartH;
-      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-    });
-    ctx.stroke();
+    // ── X axis year labels ──
+    const startYear = new Date(minDate).getFullYear();
+    const endYear   = new Date(maxDate).getFullYear();
+    ctx2.fillStyle = '#6b7280';
+    ctx2.font = '10px monospace';
+    ctx2.textAlign = 'center';
+    for (let yr = startYear; yr <= endYear; yr++) {
+      const ts = new Date(yr, 0, 1).getTime();
+      if (ts < minDate || ts > maxDate) continue;
+      const x = xOf(ts);
+      ctx2.fillText(yr, x, h - pad.bottom + 14);
+      ctx2.strokeStyle = '#1f2937';
+      ctx2.lineWidth = 1;
+      ctx2.beginPath(); ctx2.moveTo(x, pad.top); ctx2.lineTo(x, pad.top + chartH); ctx2.stroke();
+    }
 
-    // Fill under line
-    ctx.beginPath();
+    // ── Gradient fill under line ──
+    const grad = ctx2.createLinearGradient(0, pad.top, 0, pad.top + chartH);
+    grad.addColorStop(0, 'rgba(59,130,246,0.25)');
+    grad.addColorStop(1, 'rgba(59,130,246,0)');
+    ctx2.beginPath();
     history.forEach((p, i) => {
-      const x = pad.left + (i / (history.length - 1)) * chartW;
-      const y = pad.top + (1 - (p.elo - minElo) / (maxElo - minElo)) * chartH;
-      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      const x = xOf(dates[i]), y = yOf(p.elo);
+      i === 0 ? ctx2.moveTo(x, y) : ctx2.lineTo(x, y);
     });
-    ctx.lineTo(pad.left + chartW, pad.top + chartH);
-    ctx.lineTo(pad.left, pad.top + chartH);
-    ctx.closePath();
-    ctx.fillStyle = 'rgba(59,130,246,0.15)';
-    ctx.fill();
+    ctx2.lineTo(xOf(dates[dates.length - 1]), pad.top + chartH);
+    ctx2.lineTo(xOf(dates[0]), pad.top + chartH);
+    ctx2.closePath();
+    ctx2.fillStyle = grad;
+    ctx2.fill();
+
+    // ── Main line ──
+    ctx2.beginPath();
+    ctx2.strokeStyle = '#3b82f6';
+    ctx2.lineWidth = 2;
+    ctx2.lineJoin = 'round';
+    history.forEach((p, i) => {
+      const x = xOf(dates[i]), y = yOf(p.elo);
+      i === 0 ? ctx2.moveTo(x, y) : ctx2.lineTo(x, y);
+    });
+    ctx2.stroke();
+
+    // ── Win/loss dots (only draw when not too dense) ──
+    const dotRadius = history.length < 300 ? 3 : 0;
+    if (dotRadius > 0) {
+      history.forEach((p, i) => {
+        const x = xOf(dates[i]), y = yOf(p.elo);
+        ctx2.beginPath();
+        ctx2.arc(x, y, dotRadius, 0, Math.PI * 2);
+        ctx2.fillStyle = p.won ? '#22c55e' : '#ef4444';
+        ctx2.fill();
+      });
+    }
+
+    // ── Hover tooltip ──
+    c.addEventListener('mousemove', function (e) {
+      const rect = c.getBoundingClientRect();
+      const mx = e.clientX - rect.left;
+      const my = e.clientY - rect.top;
+
+      // Find nearest point by X distance
+      let best = null, bestDist = Infinity;
+      history.forEach((p, i) => {
+        const x = xOf(dates[i]);
+        const dist = Math.abs(mx - x);
+        if (dist < bestDist) { bestDist = dist; best = { p, i, x, y: yOf(p.elo) }; }
+      });
+
+      if (!best || bestDist > chartW / history.length * 2 + 20) {
+        tooltip.classList.add('hidden');
+        return;
+      }
+
+      const p = best.p;
+      const dStr = p.delta >= 0 ? `+${p.delta}` : `${p.delta}`;
+      const dCol = p.delta >= 0 ? '#4ade80' : '#f87171';
+      tooltip.innerHTML =
+        `<div class="font-semibold text-white mb-1">${p.date}</div>` +
+        `<div class="${p.won ? 'text-green-400' : 'text-red-400'}">${p.won ? 'W' : 'L'} vs ${escHtml(p.opponent)}</div>` +
+        `<div class="text-gray-300 mt-1">ELO: <span class="text-blue-400 font-mono">${p.elo}</span> ` +
+        `<span style="color:${dCol}" class="font-mono">(${dStr})</span></div>`;
+
+      // Position tooltip: prefer right of cursor, flip left near edge
+      const tW = 180;
+      let left = best.x + 10;
+      if (left + tW > w - pad.right) left = best.x - tW - 10;
+      let top = best.y - 20;
+      if (top < 0) top = 4;
+
+      tooltip.style.left = left + 'px';
+      tooltip.style.top = top + 'px';
+      tooltip.classList.remove('hidden');
+
+      // Crosshair
+      ctx2.clearRect(0, 0, w, h);
+      // Redraw everything (re-invoke without hover to avoid recursion — use a flag)
+      c._hoverX = best.x;
+      c._hoverPoint = best;
+      redrawChart(c, ctx2, history, dates, w, h, pad, chartW, chartH, minElo, maxElo, minDate, dateRange, grad, dotRadius, startYear, endYear);
+    });
+
+    c.addEventListener('mouseleave', function () {
+      tooltip.classList.add('hidden');
+      c._hoverX = null;
+      redrawChart(c, ctx2, history, dates, w, h, pad, chartW, chartH, minElo, maxElo, minDate, dateRange, grad, dotRadius, startYear, endYear);
+    });
+
+    // Store redraw fn and do initial draw via it
+    function redrawChart(canvas, ctx, history, dates, w, h, pad, chartW, chartH, minElo, maxElo, minDate, dateRange, grad, dotRadius, startYear, endYear) {
+      function xOf(ts)  { return pad.left + ((ts - minDate) / dateRange) * chartW; }
+      function yOf(elo) { return pad.top + (1 - (elo - minElo) / (maxElo - minElo)) * chartH; }
+
+      ctx.clearRect(0, 0, w, h);
+
+      // Grid + Y labels
+      for (let i = 0; i <= yTicks; i++) {
+        const elo = minElo + (maxElo - minElo) * (1 - i / yTicks);
+        const y = yOf(elo);
+        ctx.strokeStyle = '#1f2937'; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(pad.left + chartW, y); ctx.stroke();
+        ctx.fillStyle = '#6b7280'; ctx.font = '10px monospace'; ctx.textAlign = 'right';
+        ctx.fillText(Math.round(elo), pad.left - 6, y + 3.5);
+      }
+
+      // X axis years
+      ctx.fillStyle = '#6b7280'; ctx.font = '10px monospace'; ctx.textAlign = 'center';
+      for (let yr = startYear; yr <= endYear; yr++) {
+        const ts = new Date(yr, 0, 1).getTime();
+        if (ts < minDate || ts > maxDate) continue;
+        const x = xOf(ts);
+        ctx.fillText(yr, x, h - pad.bottom + 14);
+        ctx.strokeStyle = '#1f2937'; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(x, pad.top); ctx.lineTo(x, pad.top + chartH); ctx.stroke();
+      }
+
+      // Gradient fill
+      ctx.beginPath();
+      history.forEach((p, i) => {
+        const x = xOf(dates[i]), y = yOf(p.elo);
+        i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+      });
+      ctx.lineTo(xOf(dates[dates.length - 1]), pad.top + chartH);
+      ctx.lineTo(xOf(dates[0]), pad.top + chartH);
+      ctx.closePath();
+      ctx.fillStyle = grad; ctx.fill();
+
+      // Line
+      ctx.beginPath(); ctx.strokeStyle = '#3b82f6'; ctx.lineWidth = 2; ctx.lineJoin = 'round';
+      history.forEach((p, i) => {
+        const x = xOf(dates[i]), y = yOf(p.elo);
+        i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+      });
+      ctx.stroke();
+
+      // Dots
+      if (dotRadius > 0) {
+        history.forEach((p, i) => {
+          const x = xOf(dates[i]), y = yOf(p.elo);
+          ctx.beginPath(); ctx.arc(x, y, dotRadius, 0, Math.PI * 2);
+          ctx.fillStyle = p.won ? '#22c55e' : '#ef4444'; ctx.fill();
+        });
+      }
+
+      // Hover crosshair + highlighted dot
+      if (canvas._hoverX != null && canvas._hoverPoint) {
+        const hx = canvas._hoverX;
+        const hy = yOf(canvas._hoverPoint.p.elo);
+        ctx.strokeStyle = 'rgba(255,255,255,0.2)'; ctx.lineWidth = 1; ctx.setLineDash([4, 3]);
+        ctx.beginPath(); ctx.moveTo(hx, pad.top); ctx.lineTo(hx, pad.top + chartH); ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.beginPath(); ctx.arc(hx, hy, 5, 0, Math.PI * 2);
+        ctx.fillStyle = '#ffffff'; ctx.fill();
+        ctx.strokeStyle = canvas._hoverPoint.p.won ? '#22c55e' : '#ef4444';
+        ctx.lineWidth = 2; ctx.stroke();
+      }
+    }
   }
 
   // ─────────────────────────────────────────────
