@@ -2,6 +2,8 @@ This is a website for computing and displaying the ELO ratings of players in the
 
 Include a button on the website that will filter by recent players, where a recent player is one that played a match within the last 12 months.
 
+Include a button that allows the user to select two players, and display for those two players what the chances of winning are for the two players given their current ELO ratings.
+
 Use golang for converting the input html data into a form that can be easily consumed by the frontend. The golang code should read the input html file, extract the relevant data (players, winners, dates), and output a JSON file that can be loaded by the frontend.
 
 A definition of the formula can be found here:

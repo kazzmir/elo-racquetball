@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strings"
 	"time"
+	"unicode"
 
 	"golang.org/x/net/html"
 )
@@ -92,8 +93,8 @@ func parseFile(path string) ([]Match, error) {
 			// Rows have 8 columns: Season, Date, City, Event, Round, Winner, Loser, Score
 			if len(cells) >= 7 {
 				date := strings.TrimSpace(cells[1])
-				winner := strings.TrimSpace(cells[5])
-				loser := strings.TrimSpace(cells[6])
+				winner := normalizeName(cells[5])
+				loser := normalizeName(cells[6])
 
 				// Skip header row, unknown opponents, or empty players
 				if date == "Date" || winner == "" || loser == "" || loser == "?" || winner == "?" {
@@ -128,6 +129,20 @@ func parseDate(s string) time.Time {
 		}
 	}
 	return time.Time{}
+}
+
+// normalizeName lowercases then title-cases each space-separated word,
+// so "bob jones" and "BOB JONES" both become "Bob Jones".
+func normalizeName(s string) string {
+	words := strings.Fields(strings.ToLower(s))
+	for i, w := range words {
+		runes := []rune(w)
+		if len(runes) > 0 {
+			runes[0] = unicode.ToUpper(runes[0])
+		}
+		words[i] = string(runes)
+	}
+	return strings.Join(words, " ")
 }
 
 // extractCells returns the text content of all <td> children of a <tr> node.

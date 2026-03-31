@@ -24,6 +24,7 @@
       <nav class="flex gap-1">
         <button id="tab-standings" class="tab-btn px-4 py-2 rounded-md text-sm font-medium bg-blue-600 text-white">Standings</button>
         <button id="tab-matches" class="tab-btn px-4 py-2 rounded-md text-sm font-medium text-gray-300 hover:bg-gray-700">Match History</button>
+        <button id="tab-matchup" class="tab-btn px-4 py-2 rounded-md text-sm font-medium text-gray-300 hover:bg-gray-700">⚔️ Matchup</button>
       </nav>
     </div>
   </header>
@@ -102,7 +103,108 @@
       </div>
     </div>
 
-    <!-- Player Detail Panel (slide in) -->
+    <!-- Matchup Tab -->
+    <div id="view-matchup" class="hidden">
+      <div class="mb-6">
+        <h2 class="text-2xl font-bold text-white">Head-to-Head Matchup</h2>
+        <p class="text-sm text-gray-400 mt-1">Select two players to see their predicted win chances based on current ELO ratings.</p>
+      </div>
+
+      <!-- Player selectors -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <!-- Player A -->
+        <div class="bg-gray-900 rounded-xl border border-gray-700 p-5">
+          <div class="text-xs font-semibold uppercase tracking-widest text-blue-400 mb-3">Player A</div>
+          <div class="relative mb-3">
+            <input id="matchup-search-a" type="text" placeholder="Search player…" autocomplete="off"
+              class="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-blue-500">
+            <ul id="matchup-dropdown-a" class="hidden absolute z-30 w-full bg-gray-800 border border-gray-600 rounded-lg mt-1 max-h-56 overflow-y-auto shadow-xl"></ul>
+          </div>
+          <div id="matchup-card-a" class="hidden">
+            <div class="flex items-center justify-between">
+              <span id="matchup-name-a" class="font-bold text-white text-lg"></span>
+              <button id="matchup-clear-a" class="text-gray-500 hover:text-white text-xl leading-none">&times;</button>
+            </div>
+            <div class="mt-3 grid grid-cols-3 gap-2 text-center">
+              <div class="bg-gray-800 rounded-lg py-2">
+                <div id="matchup-elo-a" class="text-xl font-bold text-blue-400"></div>
+                <div class="text-xs text-gray-500 mt-0.5">ELO</div>
+              </div>
+              <div class="bg-gray-800 rounded-lg py-2">
+                <div id="matchup-record-a" class="text-sm font-semibold text-white"></div>
+                <div class="text-xs text-gray-500 mt-0.5">Record</div>
+              </div>
+              <div class="bg-gray-800 rounded-lg py-2">
+                <div id="matchup-winpct-a" class="text-sm font-semibold text-white"></div>
+                <div class="text-xs text-gray-500 mt-0.5">Win%</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Player B -->
+        <div class="bg-gray-900 rounded-xl border border-gray-700 p-5">
+          <div class="text-xs font-semibold uppercase tracking-widest text-red-400 mb-3">Player B</div>
+          <div class="relative mb-3">
+            <input id="matchup-search-b" type="text" placeholder="Search player…" autocomplete="off"
+              class="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-red-500">
+            <ul id="matchup-dropdown-b" class="hidden absolute z-30 w-full bg-gray-800 border border-gray-600 rounded-lg mt-1 max-h-56 overflow-y-auto shadow-xl"></ul>
+          </div>
+          <div id="matchup-card-b" class="hidden">
+            <div class="flex items-center justify-between">
+              <span id="matchup-name-b" class="font-bold text-white text-lg"></span>
+              <button id="matchup-clear-b" class="text-gray-500 hover:text-white text-xl leading-none">&times;</button>
+            </div>
+            <div class="mt-3 grid grid-cols-3 gap-2 text-center">
+              <div class="bg-gray-800 rounded-lg py-2">
+                <div id="matchup-elo-b" class="text-xl font-bold text-red-400"></div>
+                <div class="text-xs text-gray-500 mt-0.5">ELO</div>
+              </div>
+              <div class="bg-gray-800 rounded-lg py-2">
+                <div id="matchup-record-b" class="text-sm font-semibold text-white"></div>
+                <div class="text-xs text-gray-500 mt-0.5">Record</div>
+              </div>
+              <div class="bg-gray-800 rounded-lg py-2">
+                <div id="matchup-winpct-b" class="text-sm font-semibold text-white"></div>
+                <div class="text-xs text-gray-500 mt-0.5">Win%</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Result -->
+      <div id="matchup-result" class="hidden bg-gray-900 rounded-xl border border-gray-700 p-6">
+        <h3 class="text-center text-sm font-semibold uppercase tracking-widest text-gray-400 mb-5">Predicted Win Probability</h3>
+
+        <!-- Probability bar -->
+        <div class="flex items-center gap-3 mb-4">
+          <span id="matchup-pct-a" class="text-2xl font-bold text-blue-400 w-16 text-right"></span>
+          <div class="flex-1 h-7 rounded-full overflow-hidden bg-gray-800 flex">
+            <div id="matchup-bar-a" class="h-full bg-blue-500 transition-all duration-500 flex items-center justify-end pr-2">
+            </div>
+            <div id="matchup-bar-b" class="h-full bg-red-500 transition-all duration-500 flex items-center pl-2">
+            </div>
+          </div>
+          <span id="matchup-pct-b" class="text-2xl font-bold text-red-400 w-16"></span>
+        </div>
+
+        <!-- Names under bar -->
+        <div class="flex justify-between text-sm text-gray-400 px-1 mb-6">
+          <span id="matchup-label-a"></span>
+          <span id="matchup-label-b" class="text-right"></span>
+        </div>
+
+        <!-- Interpretation -->
+        <p id="matchup-summary" class="text-center text-gray-300 text-sm leading-relaxed"></p>
+
+        <!-- Head-to-head history -->
+        <div id="matchup-h2h" class="mt-6 hidden">
+          <h4 class="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-3">Head-to-Head History</h4>
+          <div id="matchup-h2h-body" class="space-y-1.5"></div>
+        </div>
+      </div>
+    </div>
     <div id="player-panel" class="hidden fixed inset-0 bg-black/60 z-20 flex justify-end">
       <div class="bg-gray-900 w-full max-w-2xl h-full overflow-y-auto shadow-2xl border-l border-gray-700 flex flex-col">
         <div class="flex items-center justify-between p-5 border-b border-gray-700 sticky top-0 bg-gray-900 z-10">
@@ -446,7 +548,7 @@
   function showTab(tab) {
     $('.tab-btn').removeClass('bg-blue-600 text-white').addClass('text-gray-300 hover:bg-gray-700');
     $(`#tab-${tab}`).addClass('bg-blue-600 text-white').removeClass('text-gray-300 hover:bg-gray-700');
-    $('#view-standings, #view-matches').addClass('hidden');
+    $('#view-standings, #view-matches, #view-matchup').addClass('hidden');
     $(`#view-${tab}`).removeClass('hidden');
   }
 
@@ -457,6 +559,7 @@
     // Tab buttons
     $('#tab-standings').on('click', () => showTab('standings'));
     $('#tab-matches').on('click', () => showTab('matches'));
+    $('#tab-matchup').on('click', () => showTab('matchup'));
 
     // Recent filter toggle
     $('#btn-recent').on('click', function () {
@@ -528,6 +631,12 @@
 
         $('#loading').addClass('hidden');
         showTab('standings');
+
+        // Matchup setup (needs standingsData + allRatings populated)
+        setupMatchupSearch('a');
+        setupMatchupSearch('b');
+        $('#matchup-clear-a').on('click', () => clearMatchupPlayer('a'));
+        $('#matchup-clear-b').on('click', () => clearMatchupPlayer('b'));
       })
       .fail(function (xhr) {
         $('#loading').addClass('hidden');
@@ -535,6 +644,123 @@
         $('#error').removeClass('hidden');
       });
   });
+  // ─────────────────────────────────────────────
+  // Matchup Calculator
+  // ─────────────────────────────────────────────
+  const matchupState = { a: null, b: null };
+
+  function setupMatchupSearch(side) {
+    const $input = $(`#matchup-search-${side}`);
+    const $dropdown = $(`#matchup-dropdown-${side}`);
+
+    $input.on('input', function () {
+      const q = $(this).val().trim().toLowerCase();
+      $dropdown.empty();
+      if (q.length < 1) { $dropdown.addClass('hidden'); return; }
+
+      const results = standingsData
+        .filter(p => p.name.toLowerCase().includes(q))
+        .sort((a, b) => b.elo - a.elo)
+        .slice(0, 10);
+
+      if (!results.length) { $dropdown.addClass('hidden'); return; }
+
+      results.forEach(p => {
+        const li = $(`<li class="px-4 py-2 cursor-pointer hover:bg-gray-700 flex justify-between items-center text-sm">
+          <span class="text-white">${escHtml(p.name)}</span>
+          <span class="${eloColor(p.elo)} font-mono text-xs">${p.elo}</span>
+        </li>`);
+        li.on('mousedown', () => selectMatchupPlayer(side, p.name));
+        $dropdown.append(li);
+      });
+      $dropdown.removeClass('hidden');
+    });
+
+    $input.on('blur', () => setTimeout(() => $dropdown.addClass('hidden'), 150));
+  }
+
+  function selectMatchupPlayer(side, name) {
+    const p = allRatings[name];
+    if (!p) return;
+    matchupState[side] = name;
+
+    const games = p.wins + p.losses;
+    const pct = games ? (p.wins / games * 100).toFixed(1) + '%' : '—';
+
+    $(`#matchup-search-${side}`).val('');
+    $(`#matchup-dropdown-${side}`).addClass('hidden');
+    $(`#matchup-name-${side}`).text(name);
+    $(`#matchup-elo-${side}`).text(p.elo);
+    $(`#matchup-record-${side}`).text(`${p.wins}W–${p.losses}L`);
+    $(`#matchup-winpct-${side}`).text(pct);
+    $(`#matchup-card-${side}`).removeClass('hidden');
+
+    updateMatchupResult();
+  }
+
+  function clearMatchupPlayer(side) {
+    matchupState[side] = null;
+    $(`#matchup-card-${side}`).addClass('hidden');
+    $(`#matchup-search-${side}`).val('');
+    $('#matchup-result').addClass('hidden');
+  }
+
+  function updateMatchupResult() {
+    const nameA = matchupState.a, nameB = matchupState.b;
+    if (!nameA || !nameB) { $('#matchup-result').addClass('hidden'); return; }
+
+    const pa = allRatings[nameA], pb = allRatings[nameB];
+    const pctA = expectedScore(pa.elo, pb.elo);
+    const pctB = 1 - pctA;
+
+    const pctAStr = (pctA * 100).toFixed(1) + '%';
+    const pctBStr = (pctB * 100).toFixed(1) + '%';
+
+    $('#matchup-pct-a').text(pctAStr);
+    $('#matchup-pct-b').text(pctBStr);
+    $('#matchup-bar-a').css('width', (pctA * 100).toFixed(1) + '%');
+    $('#matchup-bar-b').css('width', (pctB * 100).toFixed(1) + '%');
+    $('#matchup-label-a').text(nameA);
+    $('#matchup-label-b').text(nameB);
+
+    // Summary sentence
+    const favorite = pctA >= pctB ? nameA : nameB;
+    const favPct = Math.max(pctA, pctB);
+    let summary;
+    if (Math.abs(pctA - pctB) < 0.02) {
+      summary = `This is essentially a coin flip — both players are evenly matched.`;
+    } else {
+      summary = `<strong class="text-white">${escHtml(favorite)}</strong> is the favourite with a <strong class="text-white">${(favPct * 100).toFixed(1)}%</strong> chance of winning based on current ELO ratings (${pa.elo} vs ${pb.elo}).`;
+    }
+    $('#matchup-summary').html(summary);
+
+    // Head-to-head history
+    const h2h = allMatchResults.filter(m =>
+      (m.winner === nameA && m.loser === nameB) ||
+      (m.winner === nameB && m.loser === nameA)
+    );
+
+    if (h2h.length) {
+      const winsA = h2h.filter(m => m.winner === nameA).length;
+      const winsB = h2h.length - winsA;
+      const h2hBody = $('#matchup-h2h-body').empty();
+      $(`<div class="text-sm text-gray-400 mb-2">${escHtml(nameA)} leads <strong class="text-white">${winsA}–${winsB}</strong> in ${h2h.length} head-to-head match${h2h.length > 1 ? 'es' : ''}.</div>`).appendTo(h2hBody);
+      h2h.forEach(m => {
+        const wonByA = m.winner === nameA;
+        h2hBody.append(`<div class="flex items-center justify-between px-3 py-1.5 rounded bg-gray-800 text-sm">
+          <span class="text-gray-400 text-xs w-24 shrink-0">${m.date}</span>
+          <span class="flex-1 text-white font-medium">${escHtml(m.winner)}</span>
+          <span class="px-2 py-0.5 rounded text-xs font-bold ${wonByA ? 'bg-blue-900 text-blue-300' : 'bg-red-900 text-red-300'} ml-2">WIN</span>
+        </div>`);
+      });
+      $('#matchup-h2h').removeClass('hidden');
+    } else {
+      $('#matchup-h2h').addClass('hidden');
+    }
+
+    $('#matchup-result').removeClass('hidden');
+  }
+
   </script>
 </body>
 </html>
