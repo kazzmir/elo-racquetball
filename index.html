@@ -10,17 +10,17 @@
     [x-cloak] { display: none; }
     .sparkline { display: inline-block; vertical-align: middle; }
     tr.clickable:hover { cursor: pointer; }
+    .scrollbar-none { scrollbar-width: none; }
+    .scrollbar-none::-webkit-scrollbar { display: none; }
   </style>
 </head>
 <body class="bg-gray-950 text-gray-100 min-h-screen">
 
   <!-- Header -->
   <header class="bg-gray-900 border-b border-gray-700 sticky top-0 z-10 shadow-lg">
-    <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-      <div class="flex items-center gap-3">
-        <h1 class="text-xl font-bold text-white">Pro Racquetball ELO Ratings</h1>
-      </div>
-      <nav class="flex gap-1">
+    <div class="max-w-7xl mx-auto px-3 py-2 flex flex-col sm:flex-row sm:items-center sm:gap-4">
+      <h1 class="text-base sm:text-xl font-bold text-white shrink-0 py-1">🏸 Pro Racquetball ELO Ratings</h1>
+      <nav class="flex gap-1 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
         <button id="tab-standings" class="tab-btn px-4 py-2 rounded-md text-sm font-medium bg-blue-600 text-white">Standings</button>
         <button id="tab-matches" class="tab-btn px-4 py-2 rounded-md text-sm font-medium text-gray-300 hover:bg-gray-700">Match History</button>
         <button id="tab-matchup" class="tab-btn px-4 py-2 rounded-md text-sm font-medium text-gray-300 hover:bg-gray-700">⚔️ Matchup</button>
@@ -47,35 +47,35 @@
 
     <!-- Standings Tab -->
     <div id="view-standings" class="hidden">
-      <div class="flex items-center justify-between mb-4">
+      <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-4">
         <div>
-          <h2 class="text-2xl font-bold text-white">Current Standings</h2>
+          <h2 class="text-xl sm:text-2xl font-bold text-white">Current Standings</h2>
           <p id="standings-subtitle" class="text-sm text-gray-400 mt-1"></p>
         </div>
-        <div class="flex items-center gap-2">
-          <button id="btn-peak" class="px-4 py-2 rounded-lg text-sm font-medium border border-gray-600 text-gray-300 hover:bg-gray-700 transition-colors">
+        <div class="flex flex-wrap items-center gap-2">
+          <button id="btn-peak" class="px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-sm font-medium border border-gray-600 text-gray-300 hover:bg-gray-700 transition-colors">
             🏆 Peak ELO
           </button>
-          <button id="btn-recent" class="px-4 py-2 rounded-lg text-sm font-medium border border-gray-600 text-gray-300 hover:bg-gray-700 transition-colors">
-            🕐 Recent Players
+          <button id="btn-recent" class="px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-sm font-medium border border-gray-600 text-gray-300 hover:bg-gray-700 transition-colors">
+            🕐 Recent
           </button>
           <input id="search-player" type="text" placeholder="Search player…"
-            class="bg-gray-800 border border-gray-600 rounded-lg px-4 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 w-48">
+            class="bg-gray-800 border border-gray-600 rounded-lg px-3 py-1.5 sm:px-4 sm:py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 w-full sm:w-44">
         </div>
       </div>
       <div class="bg-gray-900 rounded-xl border border-gray-700 overflow-hidden shadow-xl">
         <table class="w-full text-sm">
           <thead>
             <tr class="bg-gray-800 text-gray-400 uppercase text-xs tracking-wide">
-              <th class="px-4 py-3 text-left w-12">#</th>
-              <th class="px-4 py-3 text-left sortable cursor-pointer hover:text-white" data-col="name">Player ↕</th>
-              <th class="px-4 py-3 text-right sortable cursor-pointer hover:text-white" data-col="elo">ELO ↕</th>
-              <th id="th-peak" class="hidden px-4 py-3 text-right sortable cursor-pointer hover:text-white" data-col="peakElo">Peak ELO ↕</th>
-              <th class="px-4 py-3 text-right sortable cursor-pointer hover:text-white" data-col="wins">Wins ↕</th>
-              <th class="px-4 py-3 text-right sortable cursor-pointer hover:text-white" data-col="losses">Losses ↕</th>
-              <th class="px-4 py-3 text-right sortable cursor-pointer hover:text-white" data-col="winpct">Win% ↕</th>
-              <th class="px-4 py-3 text-right sortable cursor-pointer hover:text-white" data-col="games">Games ↕</th>
-              <th class="px-4 py-3 text-right">Last Match</th>
+              <th class="px-2 sm:px-4 py-3 text-left w-8 sm:w-12">#</th>
+              <th class="px-2 sm:px-4 py-3 text-left sortable cursor-pointer hover:text-white" data-col="name">Player ↕</th>
+              <th class="px-2 sm:px-4 py-3 text-right sortable cursor-pointer hover:text-white" data-col="elo">ELO ↕</th>
+              <th id="th-peak" class="hidden px-2 sm:px-4 py-3 text-right sortable cursor-pointer hover:text-white" data-col="peakElo">Peak ↕</th>
+              <th class="hidden sm:table-cell px-4 py-3 text-right sortable cursor-pointer hover:text-white" data-col="wins">Wins ↕</th>
+              <th class="hidden sm:table-cell px-4 py-3 text-right sortable cursor-pointer hover:text-white" data-col="losses">Losses ↕</th>
+              <th class="hidden sm:table-cell px-4 py-3 text-right sortable cursor-pointer hover:text-white" data-col="winpct">Win% ↕</th>
+              <th class="hidden sm:table-cell px-4 py-3 text-right sortable cursor-pointer hover:text-white" data-col="games">Games ↕</th>
+              <th class="hidden sm:table-cell px-4 py-3 text-right">Last Match</th>
             </tr>
           </thead>
           <tbody id="standings-body"></tbody>
@@ -86,21 +86,21 @@
     <!-- Match History Tab -->
     <div id="view-matches" class="hidden">
       <div class="flex items-center justify-between mb-4">
-        <h2 class="text-2xl font-bold text-white">Match History</h2>
+        <h2 class="text-xl sm:text-2xl font-bold text-white">Match History</h2>
         <span id="match-count" class="text-sm text-gray-400"></span>
       </div>
       <div class="bg-gray-900 rounded-xl border border-gray-700 overflow-hidden shadow-xl">
         <table class="w-full text-sm">
           <thead>
             <tr class="bg-gray-800 text-gray-400 uppercase text-xs tracking-wide">
-              <th class="px-4 py-3 text-left">#</th>
-              <th class="px-4 py-3 text-left">Date</th>
-              <th class="px-4 py-3 text-left">Winner</th>
-              <th class="px-4 py-3 text-right">ELO After</th>
-              <th class="px-4 py-3 text-left">Loser</th>
-              <th class="px-4 py-3 text-right">ELO After</th>
-              <th class="px-4 py-3 text-right">Winner Δ</th>
-              <th class="px-4 py-3 text-right">Loser Δ</th>
+              <th class="hidden sm:table-cell px-4 py-3 text-left">#</th>
+              <th class="px-2 sm:px-4 py-3 text-left">Date</th>
+              <th class="px-2 sm:px-4 py-3 text-left">Winner</th>
+              <th class="hidden sm:table-cell px-4 py-3 text-right">ELO After</th>
+              <th class="px-2 sm:px-4 py-3 text-left">Loser</th>
+              <th class="hidden sm:table-cell px-4 py-3 text-right">ELO After</th>
+              <th class="hidden sm:table-cell px-4 py-3 text-right">Winner Δ</th>
+              <th class="hidden sm:table-cell px-4 py-3 text-right">Loser Δ</th>
             </tr>
           </thead>
           <tbody id="matches-body"></tbody>
@@ -211,8 +211,8 @@
       </div>
     </div>
     <div id="player-panel" class="hidden fixed inset-0 bg-black/60 z-20 flex justify-end">
-      <div class="bg-gray-900 w-full max-w-2xl h-full overflow-y-auto shadow-2xl border-l border-gray-700 flex flex-col">
-        <div class="flex items-center justify-between p-5 border-b border-gray-700 sticky top-0 bg-gray-900 z-10">
+      <div class="bg-gray-900 w-full sm:max-w-2xl h-full overflow-y-auto shadow-2xl sm:border-l border-gray-700 flex flex-col">
+        <div class="flex items-center justify-between p-4 sm:p-5 border-b border-gray-700 sticky top-0 bg-gray-900 z-10">
           <h3 id="player-name" class="text-xl font-bold text-white"></h3>
           <button id="close-panel" class="text-gray-400 hover:text-white text-2xl leading-none">&times;</button>
         </div>
@@ -377,19 +377,19 @@
     const tbody = $('#standings-body').empty();
     rows.forEach((r, i) => {      const pct = r.games > 0 ? (r.wins / r.games * 100).toFixed(1) : '0.0';
       const peakCell = showPeak
-        ? `<td class="px-4 py-3 text-right text-lg ${eloColor(r.peakElo)}">${r.peakElo}</td>`
+        ? `<td class="px-2 sm:px-4 py-3 text-right text-lg ${eloColor(r.peakElo)}">${r.peakElo}</td>`
         : '';
       const tr = $(`<tr class="clickable border-t border-gray-800 hover:bg-gray-800 transition-colors"
                         data-player="${escHtml(r.name)}">
-        <td class="px-4 py-3 text-gray-500">${i + 1}</td>
-        <td class="px-4 py-3 font-medium text-white">${escHtml(r.name)}</td>
-        <td class="px-4 py-3 text-right text-lg ${eloColor(r.elo)}">${r.elo}</td>
+        <td class="px-2 sm:px-4 py-3 text-gray-500">${i + 1}</td>
+        <td class="px-2 sm:px-4 py-3 font-medium text-white">${escHtml(r.name)}</td>
+        <td class="px-2 sm:px-4 py-3 text-right text-lg ${eloColor(r.elo)}">${r.elo}</td>
         ${peakCell}
-        <td class="px-4 py-3 text-right text-green-400">${r.wins}</td>
-        <td class="px-4 py-3 text-right text-red-400">${r.losses}</td>
-        <td class="px-4 py-3 text-right">${pct}%</td>
-        <td class="px-4 py-3 text-right text-gray-400">${r.games}</td>
-        <td class="px-4 py-3 text-right text-gray-500 text-xs">${r.lastDate || '—'}</td>
+        <td class="hidden sm:table-cell px-4 py-3 text-right text-green-400">${r.wins}</td>
+        <td class="hidden sm:table-cell px-4 py-3 text-right text-red-400">${r.losses}</td>
+        <td class="hidden sm:table-cell px-4 py-3 text-right">${pct}%</td>
+        <td class="hidden sm:table-cell px-4 py-3 text-right text-gray-400">${r.games}</td>
+        <td class="hidden sm:table-cell px-4 py-3 text-right text-gray-500 text-xs">${r.lastDate || '—'}</td>
       </tr>`);
       tbody.append(tr);
     });
@@ -410,14 +410,14 @@
     slice.forEach((m, idx) => {
       const num = allMatchResults.length - start - idx;
       tbody.append(`<tr class="border-t border-gray-800 hover:bg-gray-800 transition-colors">
-        <td class="px-4 py-2 text-gray-600 text-xs">${num}</td>
-        <td class="px-4 py-2 text-gray-400 text-xs whitespace-nowrap">${m.date}</td>
-        <td class="px-4 py-2 font-medium text-white clickable hover:text-blue-400" data-player="${escHtml(m.winner)}">${escHtml(m.winner)}</td>
-        <td class="px-4 py-2 text-right ${eloColor(m.winnerElo)}">${m.winnerElo}</td>
-        <td class="px-4 py-2 text-gray-300 clickable hover:text-blue-400" data-player="${escHtml(m.loser)}">${escHtml(m.loser)}</td>
-        <td class="px-4 py-2 text-right ${eloColor(m.loserElo)}">${m.loserElo}</td>
-        <td class="px-4 py-2 text-right text-xs ${deltaClass(m.deltaWinner)}">${deltaStr(m.deltaWinner)}</td>
-        <td class="px-4 py-2 text-right text-xs ${deltaClass(m.deltaLoser)}">${deltaStr(m.deltaLoser)}</td>
+        <td class="hidden sm:table-cell px-4 py-2 text-gray-600 text-xs">${num}</td>
+        <td class="px-2 sm:px-4 py-2 text-gray-400 text-xs whitespace-nowrap">${m.date}</td>
+        <td class="px-2 sm:px-4 py-2 font-medium text-white clickable hover:text-blue-400" data-player="${escHtml(m.winner)}">${escHtml(m.winner)}</td>
+        <td class="hidden sm:table-cell px-4 py-2 text-right ${eloColor(m.winnerElo)}">${m.winnerElo}</td>
+        <td class="px-2 sm:px-4 py-2 text-gray-300 clickable hover:text-blue-400" data-player="${escHtml(m.loser)}">${escHtml(m.loser)}</td>
+        <td class="hidden sm:table-cell px-4 py-2 text-right ${eloColor(m.loserElo)}">${m.loserElo}</td>
+        <td class="hidden sm:table-cell px-4 py-2 text-right text-xs ${deltaClass(m.deltaWinner)}">${deltaStr(m.deltaWinner)}</td>
+        <td class="hidden sm:table-cell px-4 py-2 text-right text-xs ${deltaClass(m.deltaLoser)}">${deltaStr(m.deltaLoser)}</td>
       </tr>`);
     });
 
