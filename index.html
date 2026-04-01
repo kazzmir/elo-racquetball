@@ -439,6 +439,8 @@
     const p = allRatings[name];
     if (!p) return;
 
+    history.pushState({ player: name }, '', '#player=' + encodeURIComponent(name));
+
     $('#player-name').text(name);
 
     const games = p.wins + p.losses;
@@ -802,13 +804,20 @@
     });
 
     // Close panel
-    $('#close-panel').on('click', () => {
+    function closePanel() {
       $('#player-panel').addClass('hidden');
       $('body').removeClass('overflow-hidden');
-    });
+      history.pushState(null, '', window.location.pathname + window.location.search);
+    }
+    $('#close-panel').on('click', closePanel);
     $('#player-panel').on('click', function (e) {
-      if (e.target === this) {
-        $(this).addClass('hidden');
+      if (e.target === this) closePanel();
+    });
+    window.addEventListener('popstate', function (e) {
+      if (e.state && e.state.player) {
+        showPlayer(e.state.player);
+      } else {
+        $('#player-panel').addClass('hidden');
         $('body').removeClass('overflow-hidden');
       }
     });
@@ -849,6 +858,13 @@
 
         $('#loading').addClass('hidden');
         showTab('standings');
+
+        // Open player panel if URL contains a deep-link hash
+        const hash = window.location.hash;
+        if (hash.startsWith('#player=')) {
+          const name = decodeURIComponent(hash.slice('#player='.length));
+          if (allRatings[name]) showPlayer(name);
+        }
 
         // Matchup setup (needs standingsData + allRatings populated)
         setupMatchupSearch('a');
