@@ -1,5 +1,7 @@
 This is a website for computing and displaying the ELO ratings of players in the professional sport of racquetball. Assume a new player starts with an ELO of 1000. Use the standard ELO formula that is used in Chess FIDE to compute ELO. There does not need to be a backend for the website, just a frontend consisting of html/javascript/css that computes the ELO ratings and displays them. The input data can be hardcoded in a file that is loaded dynamically by javascript. Use tailwind css and jquery as needed.
 
+The site should be responsive such that on a narrower device width the number of elements displayed should be reduced.
+
 Include a button on the website that will filter by recent players, where a recent player is one that played a match within the last 12 months.
 
 Include a button that allows the user to select two players, and display for those two players what the chances of winning are for the two players given their current ELO ratings.
