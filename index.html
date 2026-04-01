@@ -471,7 +471,7 @@
         <div class="flex items-center gap-3">
           <span class="px-2 py-0.5 rounded text-xs font-bold ${won ? 'bg-green-900 text-green-300' : 'bg-red-900 text-red-300'}">${won ? 'W' : 'L'}</span>
           <span class="text-gray-400 text-xs">${h.date}</span>
-          <span class="text-white">${escHtml(h.opponent)}</span>
+          <span class="text-white cursor-pointer hover:text-blue-400 hover:underline" data-player="${escHtml(h.opponent)}">${escHtml(h.opponent)}</span>
         </div>
         <div class="flex items-center gap-3 font-mono text-xs">
           <span class="${deltaCls}">${deltaStr}</span>
