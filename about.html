@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>About — Pro Racquetball ELO Ratings</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-950 text-gray-100 min-h-screen">
+
+  <header class="bg-gray-900 border-b border-gray-700 sticky top-0 z-10 shadow-lg">
+    <div class="max-w-7xl mx-auto px-3 py-2 flex flex-col sm:flex-row sm:items-center sm:gap-4">
+      <h1 class="text-base sm:text-xl font-bold text-white shrink-0 py-1">Pro Racquetball ELO Ratings</h1>
+      <nav class="flex gap-1 overflow-x-auto pb-1 sm:pb-0">
+        <a href="index.html" class="px-4 py-2 rounded-md text-sm font-medium text-gray-300 hover:bg-gray-700 transition-colors">Standings</a>
+        <a href="https://en.wikipedia.org/wiki/Elo_rating_system" target="_blank" rel="noopener noreferrer"
+           class="px-4 py-2 rounded-md text-sm font-medium text-gray-300 hover:bg-gray-700 transition-colors">What is ELO?</a>
+        <a href="about.html" class="px-4 py-2 rounded-md text-sm font-medium bg-blue-600 text-white">About</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="max-w-2xl mx-auto px-4 py-12 space-y-8">
+
+    <section>
+      <h2 class="text-2xl font-bold text-white mb-3">Data Source</h2>
+      <p class="text-gray-300 leading-relaxed">
+        All match results and player profiles used on this site come from
+        <a href="https://proracquetballstats.com" target="_blank" rel="noopener noreferrer"
+           class="text-blue-400 hover:text-blue-300 underline underline-offset-2">proracquetballstats.com</a>,
+        a comprehensive historical database of professional racquetball tournament results.
+      </p>
+    </section>
+
+    <section>
+      <h2 class="text-2xl font-bold text-white mb-3">How ELO Is Calculated</h2>
+      <p class="text-gray-300 leading-relaxed mb-3">
+        Ratings use the
+        <a href="https://en.wikipedia.org/wiki/Elo_rating_system" target="_blank" rel="noopener noreferrer"
+           class="text-blue-400 hover:text-blue-300 underline underline-offset-2">FIDE ELO formula</a>
+        with the following K-factors:
+      </p>
+      <ul class="list-disc list-inside text-gray-300 space-y-1 ml-2">
+        <li><span class="text-white font-medium">K = 40</span> — fewer than 30 career games</li>
+        <li><span class="text-white font-medium">K = 20</span> — 30+ games and ELO below 2400</li>
+        <li><span class="text-white font-medium">K = 10</span> — ELO 2400 or above</li>
+      </ul>
+      <p class="text-gray-300 leading-relaxed mt-3">
+        All players start at <span class="text-white font-medium">ELO 1000</span>.
+      </p>
+    </section>
+
+    <section>
+      <h2 class="text-2xl font-bold text-white mb-3">Age Adjustment</h2>
+      <p class="text-gray-300 leading-relaxed">
+        To account for the natural advantage of younger players, each player's
+        <em>effective</em> ELO is adjusted when computing expected match outcomes:
+        for every <span class="text-white font-medium">200 days</span> a player is older
+        than their opponent, their effective ELO is reduced by 1.
+        This adjustment only affects the expected-score calculation — stored ELO values
+        are always the true, unadjusted ratings.
+        Birth dates come from player profiles on proracquetballstats.com;
+        players with no listed birth date are assumed to have been 20 years old
+        at the time of their first recorded match.
+      </p>
+    </section>
+
+    <section>
+      <h2 class="text-2xl font-bold text-white mb-3">Disclaimer</h2>
+      <p class="text-gray-300 leading-relaxed">
+        This is an unofficial fan project. All underlying data belongs to
+        <a href="https://proracquetballstats.com" target="_blank" rel="noopener noreferrer"
+           class="text-blue-400 hover:text-blue-300 underline underline-offset-2">proracquetballstats.com</a>.
+        ELO ratings are computed from historical results and are not affiliated with
+        the IRT, WRT, or any official professional racquetball organisation.
+      </p>
+    </section>
+
+  </main>
+
+</body>
+</html>
