@@ -14,10 +14,24 @@ import (
 	"golang.org/x/net/html"
 )
 
-type Match struct {
+type rawMatch struct {
+	Date   string
+	Winner string
+	Loser  string
+}
+
+// Output is the JSON structure written to disk.
+// names[i] is the player name; births[i] is always "" for HTML-parsed data (no profile info).
+type Output struct {
+	Names   []string       `json:"names"`
+	Births  []string       `json:"births"`
+	Matches []MatchRecord  `json:"matches"`
+}
+
+type MatchRecord struct {
 	Date   string `json:"date"`
-	Winner string `json:"winner"`
-	Loser  string `json:"loser"`
+	Winner int    `json:"winner"`
+	Loser  int    `json:"loser"`
 }
 
 func main() {
@@ -30,9 +44,8 @@ func main() {
 	outputPath := os.Args[1]
 	inputPaths := os.Args[2:]
 
-	// Use a map to deduplicate: key = "date|winner|loser"
 	seen := make(map[string]struct{})
-	var matches []Match
+	var rawMatches []rawMatch
 
 	for _, path := range inputPaths {
 		parsed, err := parseFile(path)
@@ -45,7 +58,7 @@ func main() {
 			key := m.Date + "|" + m.Winner + "|" + m.Loser
 			if _, dup := seen[key]; !dup {
 				seen[key] = struct{}{}
-				matches = append(matches, m)
+				rawMatches = append(rawMatches, m)
 				added++
 			}
 		}
@@ -53,9 +66,44 @@ func main() {
 	}
 
 	// Sort chronologically by parsed date, preserving file order for same-day matches.
-	sort.SliceStable(matches, func(i, j int) bool {
-		return parseDate(matches[i].Date).Before(parseDate(matches[j].Date))
+	sort.SliceStable(rawMatches, func(i, j int) bool {
+		return parseDate(rawMatches[i].Date).Before(parseDate(rawMatches[j].Date))
 	})
+
+	// Build player index: assign integer IDs in order of first appearance.
+	nameIndex := map[string]int{}
+	var names []string
+	playerID := func(name string) int {
+		if id, ok := nameIndex[name]; ok {
+			return id
+		}
+		id := len(names)
+		nameIndex[name] = id
+		names = append(names, name)
+		return id
+	}
+	for _, m := range rawMatches {
+		playerID(m.Winner)
+		playerID(m.Loser)
+	}
+
+	// births is all empty strings for HTML-parsed data (no birth date info).
+	births := make([]string, len(names))
+
+	matchRecords := make([]MatchRecord, len(rawMatches))
+	for i, m := range rawMatches {
+		matchRecords[i] = MatchRecord{
+			Date:   m.Date,
+			Winner: nameIndex[m.Winner],
+			Loser:  nameIndex[m.Loser],
+		}
+	}
+
+	output := Output{
+		Names:   names,
+		Births:  births,
+		Matches: matchRecords,
+	}
 
 	out, err := os.Create(outputPath)
 	if err != nil {
@@ -72,16 +120,15 @@ func main() {
 	}
 
 	enc := json.NewEncoder(w)
-	enc.SetIndent("", "  ")
-	if err := enc.Encode(matches); err != nil {
+	if err := enc.Encode(output); err != nil {
 		fmt.Fprintf(os.Stderr, "Error encoding JSON: %v\n", err)
 		os.Exit(1)
 	}
 
-	fmt.Fprintf(os.Stderr, "Total: %d matches written to %s\n", len(matches), outputPath)
+	fmt.Fprintf(os.Stderr, "Total: %d matches, %d players written to %s\n", len(matchRecords), len(names), outputPath)
 }
 
-func parseFile(path string) ([]Match, error) {
+func parseFile(path string) ([]rawMatch, error) {
 	f, err := os.Open(path)
 	if err != nil {
 		return nil, err
@@ -93,7 +140,7 @@ func parseFile(path string) ([]Match, error) {
 		return nil, err
 	}
 
-	var matches []Match
+	var matches []rawMatch
 	var walk func(*html.Node)
 
 	walk = func(n *html.Node) {
@@ -114,7 +161,7 @@ func parseFile(path string) ([]Match, error) {
 					return
 				}
 
-				matches = append(matches, Match{
+				matches = append(matches, rawMatch{
 					Date:   date,
 					Winner: winner,
 					Loser:  loser,

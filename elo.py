@@ -34,11 +34,13 @@ def expected_score(ra: int, rb: int) -> float:
     return 1 / (1 + math.pow(10, (rb - ra) / 400))
 
 
-def age_adjustment(name_a: str, name_b: str, match_date: str, birth_dates: dict) -> tuple[float, float]:
+def age_adjustment(id_a: int, id_b: int, match_date: str, births: list) -> tuple[float, float]:
     """Return (adj_a, adj_b): effective ELO delta based on age difference at match_date.
     For every 200 days player A is older than player B, A gets -1 effective ELO."""
-    dob_a = birth_dates.get(name_a)
-    dob_b = birth_dates.get(name_b)
+    if not births:
+        return 0.0, 0.0
+    dob_a = births[id_a] if id_a < len(births) else ""
+    dob_b = births[id_b] if id_b < len(births) else ""
     if not dob_a or not dob_b:
         return 0.0, 0.0
     from datetime import date
@@ -52,10 +54,13 @@ def age_adjustment(name_a: str, name_b: str, match_date: str, birth_dates: dict)
     return -adj, adj  # older gets negative
 
 
-def compute_elo(matches: list[dict], birth_dates: dict | None = None) -> dict:
-    """Return a dict of player -> {elo, wins, losses} after processing all matches."""
-    if birth_dates is None:
-        birth_dates = {}
+def compute_elo(names: list[str], births: list[str] | None, matches: list[dict]) -> dict:
+    """Return a dict of player -> {elo, wins, losses} after processing all matches.
+
+    names: player name array (index = player ID). If None, matches use string names.
+    births: birth date array parallel to names, or None for no age adjustment.
+    matches: list of {date, winner, loser} where winner/loser are int IDs (or strings if names=None).
+    """
     ratings: dict[str, dict] = {}
 
     def get(name):
@@ -64,8 +69,15 @@ def compute_elo(matches: list[dict], birth_dates: dict | None = None) -> dict:
         return ratings[name]
 
     for m in matches:
-        w, l = get(m["winner"]), get(m["loser"])
-        adj_w, adj_l = age_adjustment(m["winner"], m["loser"], m["date"], birth_dates)
+        if names is not None:
+            w_name = names[m["winner"]]
+            l_name = names[m["loser"]]
+            adj_w, adj_l = age_adjustment(m["winner"], m["loser"], m["date"], births or [])
+        else:
+            w_name = m["winner"]
+            l_name = m["loser"]
+            adj_w, adj_l = 0.0, 0.0
+        w, l = get(w_name), get(l_name)
         ea = expected_score(w["elo"] + adj_w, l["elo"] + adj_l)
         kw = k_factor(w["elo"], w["wins"] + w["losses"])
         kl = k_factor(l["elo"], l["wins"] + l["losses"])
@@ -132,14 +144,20 @@ def main():
     except json.JSONDecodeError as e:
         sys.exit(f"Error reading {output_json}: {e}")
 
-    # Support both old format (array) and new format ({matches, players}).
+    # Detect format: new indexed ({names, births, matches}), legacy object, or plain array.
     if isinstance(data, list):
-        matches, birth_dates = data, {}
+        # Old plain array: {date, winner(str), loser(str)}
+        names, births, matches = None, None, data
+    elif "names" in data:
+        # New compact indexed format
+        names = data["names"]
+        births = data.get("births") or None
+        matches = data["matches"]
     else:
-        matches = data.get("matches", [])
-        birth_dates = data.get("players", {})
+        # Old object format {matches: [...], players: {...}}
+        names, births, matches = None, None, data.get("matches", [])
 
-    ratings = compute_elo(matches, birth_dates)
+    ratings = compute_elo(names, births, matches)
     print_standings(ratings, len(matches))
 
 

@@ -26,17 +26,26 @@ import (
 	"unicode"
 )
 
-// Match is a single game result.
-type Match struct {
+// MatchRecord is a single game result using integer player indices.
+type MatchRecord struct {
 	Date   string `json:"date"`
-	Winner string `json:"winner"`
-	Loser  string `json:"loser"`
+	Winner int    `json:"winner"`
+	Loser  int    `json:"loser"`
 }
 
 // Output is the JSON structure written to disk.
+// names[i] is the player name; births[i] is their birth date ("YYYY-MM-DD") or "".
 type Output struct {
-	Matches []Match           `json:"matches"`
-	Players map[string]string `json:"players"` // name → "YYYY-MM-DD" birth date
+	Names   []string      `json:"names"`
+	Births  []string      `json:"births"`
+	Matches []MatchRecord `json:"matches"`
+}
+
+// rawMatch is used internally during parsing before player IDs are assigned.
+type rawMatch struct {
+	Date   string
+	Winner string
+	Loser  string
 }
 
 func main() {
@@ -71,7 +80,7 @@ func main() {
 
 	// --- Parse matches ---
 	seen := map[string]bool{}
-	var matches []Match
+	var rawMatches []rawMatch
 
 	for _, rf := range resultFiles {
 		newMatches, dupes := parseResults(rf)
@@ -80,7 +89,7 @@ func main() {
 			key := m.Date + "|" + m.Winner + "|" + m.Loser
 			if !seen[key] {
 				seen[key] = true
-				matches = append(matches, m)
+				rawMatches = append(rawMatches, m)
 				added++
 			}
 		}
@@ -89,14 +98,13 @@ func main() {
 	}
 
 	// Sort chronologically.
-	sort.Slice(matches, func(i, j int) bool {
-		return matches[i].Date < matches[j].Date
+	sort.Slice(rawMatches, func(i, j int) bool {
+		return rawMatches[i].Date < rawMatches[j].Date
 	})
 
 	// --- Infer birth dates for players with no profile entry ---
-	// Find first recorded match date for each player, then use date - 20 years.
 	firstMatch := map[string]string{} // player → earliest match date
-	for _, m := range matches {
+	for _, m := range rawMatches {
 		for _, name := range []string{m.Winner, m.Loser} {
 			if _, hasBirth := birthDates[name]; hasBirth {
 				continue
@@ -118,10 +126,46 @@ func main() {
 	}
 	fmt.Fprintf(os.Stderr, "inferred %d birth dates (assumed age 20 at first match)\n", inferred)
 
+	// --- Build player index ---
+	// Assign a stable integer ID to each player name in order of first appearance.
+	nameIndex := map[string]int{}
+	var names []string
+	playerID := func(name string) int {
+		if id, ok := nameIndex[name]; ok {
+			return id
+		}
+		id := len(names)
+		nameIndex[name] = id
+		names = append(names, name)
+		return id
+	}
+	// Pre-scan in match order so IDs are assigned chronologically.
+	for _, m := range rawMatches {
+		playerID(m.Winner)
+		playerID(m.Loser)
+	}
+
+	// Build birth date array parallel to names.
+	births := make([]string, len(names))
+	for i, name := range names {
+		births[i] = birthDates[name] // "" if not found (shouldn't happen after inference)
+	}
+
+	// Build compact match records.
+	matchRecords := make([]MatchRecord, len(rawMatches))
+	for i, m := range rawMatches {
+		matchRecords[i] = MatchRecord{
+			Date:   m.Date,
+			Winner: nameIndex[m.Winner],
+			Loser:  nameIndex[m.Loser],
+		}
+	}
+
 	// --- Write output ---
 	out := Output{
-		Matches: matches,
-		Players: birthDates,
+		Names:   names,
+		Births:  births,
+		Matches: matchRecords,
 	}
 
 	f, err := os.Create(outFile)
@@ -149,10 +193,10 @@ func main() {
 
 	fi, _ := os.Stat(outFile)
 	fmt.Fprintf(os.Stderr, "wrote %d matches, %d players → %s (%d bytes)\n",
-		len(matches), len(birthDates), outFile, fi.Size())
+		len(matchRecords), len(names), outFile, fi.Size())
 
 	// Print top-20 ELO standings to stdout for quick sanity check.
-	printStandings(matches, birthDates)
+	printStandings(rawMatches, birthDates)
 }
 
 // nopCloser wraps os.File to satisfy the Close interface for non-gzip path.
@@ -165,7 +209,7 @@ func (n *nopCloser) Close() error { return n.File.Close() }
 // parseResults reads a MariaDB dump of the `results` table and returns valid matches.
 // Columns: winner(0), loser(1), round(2), score(3), tour(4), city(5), event(6),
 //          date(7), source(8), season(9), notes(10), tmp_date(11)
-func parseResults(path string) (matches []Match, dupes int) {
+func parseResults(path string) (matches []rawMatch, dupes int) {
 	f, err := os.Open(path)
 	if err != nil {
 		log.Fatalf("open %s: %v", path, err)
@@ -212,7 +256,7 @@ func parseResults(path string) (matches []Match, dupes int) {
 				continue
 			}
 
-			matches = append(matches, Match{
+			matches = append(matches, rawMatch{
 				Date:   tmpDate,
 				Winner: normalizeName(winner),
 				Loser:  normalizeName(loser),
@@ -390,7 +434,7 @@ type playerStat struct {
 }
 
 // printStandings computes age-adjusted ELO and prints top-20 to stdout.
-func printStandings(matches []Match, birthDates map[string]string) {
+func printStandings(matches []rawMatch, birthDates map[string]string) {
 	elo := map[string]float64{}
 	peak := map[string]float64{}
 	wins := map[string]int{}

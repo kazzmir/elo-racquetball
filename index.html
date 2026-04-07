@@ -255,10 +255,10 @@
   // ageAdjustment returns the ELO delta to apply to each player's *effective* ELO before
   // computing expected scores. For every 200 days player A is older than player B, A's
   // effective ELO is reduced by 1 (and B's increased by 1).
-  // birthDates: { "Name": "YYYY-MM-DD" }
-  function ageAdjustment(nameA, nameB, matchDate, birthDates) {
-    if (!birthDates) return [0, 0];
-    const dobA = birthDates[nameA], dobB = birthDates[nameB];
+  // births: array of "YYYY-MM-DD" indexed by player ID (parallel to names)
+  function ageAdjustment(idA, idB, matchDate, births) {
+    if (!births) return [0, 0];
+    const dobA = births[idA], dobB = births[idB];
     if (!dobA || !dobB) return [0, 0];
     const match = new Date(matchDate).getTime();
     const ageA = (match - new Date(dobA).getTime()) / 86400000; // days
@@ -268,8 +268,11 @@
     return [-adj, adj]; // older player gets negative adjustment
   }
 
-  function computeElo(matches, birthDates) {
-    // ratings[player] = { elo, wins, losses, history: [{date, elo, opponent, won}], lastDate }
+  // computeElo processes the indexed match format: {names, births, matches}
+  // where each match.winner/loser is an integer index into names/births.
+  // If names is null (old string format), winner/loser are plain strings.
+  function computeElo(names, births, matches) {
+    // ratings[name] = { elo, wins, losses, history: [{date, elo, delta, opponent, won}], lastDate }
     const ratings = {};
 
     function getPlayer(name) {
@@ -282,13 +285,19 @@
     const matchResults = [];
 
     for (const m of matches) {
-      const w = getPlayer(m.winner);
-      const l = getPlayer(m.loser);
+      // Resolve names: integer index (new format) or plain string (old format).
+      const wName = names ? names[m.winner] : m.winner;
+      const lName = names ? names[m.loser]  : m.loser;
+      const w = getPlayer(wName);
+      const l = getPlayer(lName);
 
       const ra = w.elo, rb = l.elo;
 
       // Age-adjusted effective ELOs for expected score calculation only.
-      const [adjW, adjL] = ageAdjustment(m.winner, m.loser, m.date, birthDates);
+      // Pass integer IDs when using births array, or skip when no birth data.
+      const [adjW, adjL] = names
+        ? ageAdjustment(m.winner, m.loser, m.date, births)
+        : [0, 0];
       const ea = expectedScore(ra + adjW, rb + adjL);
       const eb = 1 - ea;
 
@@ -310,13 +319,13 @@
       w.lastDate = m.date;
       l.lastDate = m.date;
 
-      w.history.push({ date: m.date, elo: newRa, delta: deltaW, opponent: m.loser, won: true });
-      l.history.push({ date: m.date, elo: newRb, delta: deltaL, opponent: m.winner, won: false });
+      w.history.push({ date: m.date, elo: newRa, delta: deltaW, opponent: lName, won: true });
+      l.history.push({ date: m.date, elo: newRb, delta: deltaL, opponent: wName, won: false });
 
       matchResults.push({
         date: m.date,
-        winner: m.winner,
-        loser: m.loser,
+        winner: wName,
+        loser: lName,
         winnerElo: newRa,
         loserElo: newRb,
         deltaWinner: deltaW,
@@ -850,11 +859,25 @@
         const decompressed = response.body.pipeThrough(ds);
         const data = await new Response(decompressed).json();
 
-        // Support both old format (array) and new format ({matches, players}).
-        const matches = Array.isArray(data) ? data : data.matches;
-        const birthDates = Array.isArray(data) ? null : (data.players || null);
+        // Format: {names, births, matches} where winner/loser are integer indices.
+        // Backward compat: if data is an array or has old {matches, players} shape, handle it.
+        let names, births, matches;
+        if (Array.isArray(data)) {
+          // Old format: plain array of {date, winner, loser} strings
+          matches = data;
+          names = null; births = null;
+        } else if (data.names) {
+          // New compact format
+          names = data.names;
+          births = data.births || null;
+          matches = data.matches;
+        } else {
+          // Old object format with string names and players dict
+          matches = data.matches;
+          names = null; births = null;
+        }
 
-        const { ratings, matchResults } = computeElo(matches, birthDates);
+        const { ratings, matchResults } = computeElo(names, births, matches);
         allRatings = ratings;
         allMatchResults = matchResults;
 
