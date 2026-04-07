@@ -855,8 +855,26 @@
     });
 
     // Load data — fetch a .json.gz file, decompress, compute ELO, and re-render everything.
+    // Cache computed results keyed by filename so switching tours doesn't re-fetch.
+    const tourCache = {};
+
     async function loadMatches(file) {
       closePanel();
+
+      if (tourCache[file]) {
+        // Already loaded — just swap in the cached data and re-render.
+        ({ allRatings, allMatchResults, standingsData } = tourCache[file]);
+        $('#match-count').text(`${tourCache[file].matchCount} total matches`);
+        renderStandings();
+        allMatchResults = tourCache[file].allMatchResults;
+        renderMatchPage();
+        setupMatchupSearch('a');
+        setupMatchupSearch('b');
+        $('#matchup-clear-a').on('click', () => clearMatchupPlayer('a'));
+        $('#matchup-clear-b').on('click', () => clearMatchupPlayer('b'));
+        return;
+      }
+
       $('#loading').removeClass('hidden');
       $('#error').addClass('hidden');
       try {
@@ -883,7 +901,6 @@
 
         const { ratings, matchResults } = computeElo(names, births, matches);
         allRatings = ratings;
-        allMatchResults = matchResults;
 
         // Build standings array
         standingsData = Object.entries(ratings).map(([name, r]) => ({
@@ -898,12 +915,14 @@
         }));
 
         const matchCount = matchResults.length;
-        $('#match-count').text(`${matchCount} total matches`);
-
-        renderStandings();
-
-        // Matches (newest first)
+        // Matches (newest first) for match history tab
         allMatchResults = matchResults.slice().reverse();
+
+        // Store in cache before rendering so future switches are instant.
+        tourCache[file] = { allRatings, allMatchResults, standingsData, matchCount };
+
+        $('#match-count').text(`${matchCount} total matches`);
+        renderStandings();
         renderMatchPage();
 
         $('#loading').addClass('hidden');
