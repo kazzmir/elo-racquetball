@@ -34,8 +34,28 @@ def expected_score(ra: int, rb: int) -> float:
     return 1 / (1 + math.pow(10, (rb - ra) / 400))
 
 
-def compute_elo(matches: list[dict]) -> dict:
+def age_adjustment(name_a: str, name_b: str, match_date: str, birth_dates: dict) -> tuple[float, float]:
+    """Return (adj_a, adj_b): effective ELO delta based on age difference at match_date.
+    For every 200 days player A is older than player B, A gets -1 effective ELO."""
+    dob_a = birth_dates.get(name_a)
+    dob_b = birth_dates.get(name_b)
+    if not dob_a or not dob_b:
+        return 0.0, 0.0
+    from datetime import date
+    def parse(s):
+        return date.fromisoformat(s)
+    match = parse(match_date)
+    age_a = (match - parse(dob_a)).days
+    age_b = (match - parse(dob_b)).days
+    age_diff = age_a - age_b  # positive → A is older
+    adj = age_diff / 200.0
+    return -adj, adj  # older gets negative
+
+
+def compute_elo(matches: list[dict], birth_dates: dict | None = None) -> dict:
     """Return a dict of player -> {elo, wins, losses} after processing all matches."""
+    if birth_dates is None:
+        birth_dates = {}
     ratings: dict[str, dict] = {}
 
     def get(name):
@@ -45,7 +65,8 @@ def compute_elo(matches: list[dict]) -> dict:
 
     for m in matches:
         w, l = get(m["winner"]), get(m["loser"])
-        ea = expected_score(w["elo"], l["elo"])
+        adj_w, adj_l = age_adjustment(m["winner"], m["loser"], m["date"], birth_dates)
+        ea = expected_score(w["elo"] + adj_w, l["elo"] + adj_l)
         kw = k_factor(w["elo"], w["wins"] + w["losses"])
         kl = k_factor(l["elo"], l["wins"] + l["losses"])
         w["elo"] = round(w["elo"] + kw * (1 - ea))
@@ -105,13 +126,20 @@ def main():
     try:
         opener = gzip.open if output_json.endswith('.gz') else open
         with opener(output_json, 'rt') as f:
-            matches = json.load(f)
+            data = json.load(f)
     except FileNotFoundError:
         sys.exit(f"Error: {output_json} not found. Provide HTML files to generate it.")
     except json.JSONDecodeError as e:
         sys.exit(f"Error reading {output_json}: {e}")
 
-    ratings = compute_elo(matches)
+    # Support both old format (array) and new format ({matches, players}).
+    if isinstance(data, list):
+        matches, birth_dates = data, {}
+    else:
+        matches = data.get("matches", [])
+        birth_dates = data.get("players", {})
+
+    ratings = compute_elo(matches, birth_dates)
     print_standings(ratings, len(matches))
 
 

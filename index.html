@@ -252,7 +252,23 @@
     return 1 / (1 + Math.pow(10, (rb - ra) / 400));
   }
 
-  function computeElo(matches) {
+  // ageAdjustment returns the ELO delta to apply to each player's *effective* ELO before
+  // computing expected scores. For every 200 days player A is older than player B, A's
+  // effective ELO is reduced by 1 (and B's increased by 1).
+  // birthDates: { "Name": "YYYY-MM-DD" }
+  function ageAdjustment(nameA, nameB, matchDate, birthDates) {
+    if (!birthDates) return [0, 0];
+    const dobA = birthDates[nameA], dobB = birthDates[nameB];
+    if (!dobA || !dobB) return [0, 0];
+    const match = new Date(matchDate).getTime();
+    const ageA = (match - new Date(dobA).getTime()) / 86400000; // days
+    const ageB = (match - new Date(dobB).getTime()) / 86400000;
+    const ageDiff = ageA - ageB; // positive → A is older
+    const adj = ageDiff / 200;
+    return [-adj, adj]; // older player gets negative adjustment
+  }
+
+  function computeElo(matches, birthDates) {
     // ratings[player] = { elo, wins, losses, history: [{date, elo, opponent, won}], lastDate }
     const ratings = {};
 
@@ -270,8 +286,11 @@
       const l = getPlayer(m.loser);
 
       const ra = w.elo, rb = l.elo;
-      const ea = expectedScore(ra, rb);
-      const eb = expectedScore(rb, ra);
+
+      // Age-adjusted effective ELOs for expected score calculation only.
+      const [adjW, adjL] = ageAdjustment(m.winner, m.loser, m.date, birthDates);
+      const ea = expectedScore(ra + adjW, rb + adjL);
+      const eb = 1 - ea;
 
       const ka = kFactor(ra, w.wins + w.losses);
       const kb = kFactor(rb, l.wins + l.losses);
@@ -829,9 +848,13 @@
         if (!response.ok) throw new Error(`HTTP ${response.status} ${response.statusText}`);
         const ds = new DecompressionStream('gzip');
         const decompressed = response.body.pipeThrough(ds);
-        const matches = await new Response(decompressed).json();
+        const data = await new Response(decompressed).json();
 
-        const { ratings, matchResults } = computeElo(matches);
+        // Support both old format (array) and new format ({matches, players}).
+        const matches = Array.isArray(data) ? data : data.matches;
+        const birthDates = Array.isArray(data) ? null : (data.players || null);
+
+        const { ratings, matchResults } = computeElo(matches, birthDates);
         allRatings = ratings;
         allMatchResults = matchResults;
 
