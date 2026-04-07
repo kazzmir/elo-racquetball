@@ -365,14 +365,16 @@
   let recentOnly = false;
   let showPeak = false;
 
-  function parseMDY(s) {
+  function parseDate(s) {
     if (!s) return null;
+    // Accepts both ISO "YYYY-MM-DD" and legacy "M/D/YYYY"
+    if (s.includes('-')) return new Date(s + 'T00:00:00');
     const [m, d, y] = s.split('/').map(Number);
     return new Date(y, m - 1, d);
   }
 
   function isRecent(lastDate) {
-    const d = parseMDY(lastDate);
+    const d = parseDate(lastDate);
     if (!d) return false;
     const cutoff = new Date();
     cutoff.setFullYear(cutoff.getFullYear() - 1);
