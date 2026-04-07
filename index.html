@@ -554,11 +554,8 @@
     const minElo = rawMin - eloRange * 0.08;
     const maxElo = rawMax + eloRange * 0.08;
 
-    // Parse dates for X axis
-    const dates = history.map(p => {
-      const [m, d, y] = p.date.split('/').map(Number);
-      return new Date(y, m - 1, d).getTime();
-    });
+    // Parse dates for X axis — handles both ISO "YYYY-MM-DD" and legacy "M/D/YYYY"
+    const dates = history.map(p => parseDate(p.date).getTime());
     const minDate = Math.min(...dates), maxDate = Math.max(...dates);
     const dateRange = maxDate - minDate || 1;
 
