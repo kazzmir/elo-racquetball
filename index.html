@@ -854,11 +854,64 @@
   // ─────────────────────────────────────────────
   // Tab switching
   // ─────────────────────────────────────────────
-  function showTab(tab) {
+  const matchupState = { a: null, b: null };
+  let activeTab = 'standings';
+  let currentTourFile = 'matches.json.gz';
+  let currentTourId = 'tour-irt';
+
+  function getRouteState() {
+    const params = new URLSearchParams(window.location.search);
+    const tab = params.get('tab');
+    const tour = params.get('tour');
+    return {
+      hasTab: params.has('tab'),
+      tab: ['standings', 'matches', 'matchup'].includes(tab) ? tab : 'standings',
+      tourFile: tour === 'lprt' ? 'women_matches.json.gz' : 'matches.json.gz',
+      tourId: tour === 'lprt' ? 'tour-lprt' : 'tour-irt',
+      matchupA: params.get('matchupA'),
+      matchupB: params.get('matchupB'),
+    };
+  }
+
+  function syncRouteState() {
+    const url = new URL(window.location.href);
+    const params = url.searchParams;
+
+    if (currentTourId === 'tour-lprt') {
+      params.set('tour', 'lprt');
+    } else {
+      params.delete('tour');
+    }
+
+    if (activeTab !== 'standings') {
+      params.set('tab', activeTab);
+    } else {
+      params.delete('tab');
+    }
+
+    if (matchupState.a) {
+      params.set('matchupA', matchupState.a);
+    } else {
+      params.delete('matchupA');
+    }
+
+    if (matchupState.b) {
+      params.set('matchupB', matchupState.b);
+    } else {
+      params.delete('matchupB');
+    }
+
+    const search = params.toString();
+    history.replaceState(history.state, '', `${url.pathname}${search ? `?${search}` : ''}${url.hash}`);
+  }
+
+  function showTab(tab, options = {}) {
+    activeTab = tab;
     $('.tab-btn').removeClass('bg-blue-600 text-white').addClass('text-gray-300 hover:bg-gray-700');
     $(`#tab-${tab}`).addClass('bg-blue-600 text-white').removeClass('text-gray-300 hover:bg-gray-700');
     $('#view-standings, #view-matches, #view-matchup').addClass('hidden');
     $(`#view-${tab}`).removeClass('hidden');
+    if (!options.skipRouteSync) syncRouteState();
   }
 
   // ─────────────────────────────────────────────
@@ -947,10 +1000,20 @@
         renderStandings();
         allMatchResults = tourCache[file].allMatchResults;
         renderMatchPage();
+        resetMatchupSelection({ skipRouteSync: true });
         setupMatchupSearch('a');
         setupMatchupSearch('b');
         $('#matchup-clear-a').on('click', () => clearMatchupPlayer('a'));
         $('#matchup-clear-b').on('click', () => clearMatchupPlayer('b'));
+        const route = getRouteState();
+        if (route.matchupA && allRatings[route.matchupA]) {
+          selectMatchupPlayer('a', route.matchupA);
+        }
+        if (route.matchupB && allRatings[route.matchupB]) {
+          selectMatchupPlayer('b', route.matchupB);
+        }
+        showTab(route.tab === 'matchup' || (!route.hasTab && (route.matchupA || route.matchupB)) ? 'matchup' : route.tab, { skipRouteSync: true });
+        syncRouteState();
         return;
       }
 
@@ -1005,7 +1068,7 @@
         renderMatchPage();
 
         $('#loading').addClass('hidden');
-        showTab('standings');
+        resetMatchupSelection({ skipRouteSync: true });
 
         // Open player panel if URL contains a deep-link hash
         const hash = window.location.hash;
@@ -1019,6 +1082,16 @@
         setupMatchupSearch('b');
         $('#matchup-clear-a').on('click', () => clearMatchupPlayer('a'));
         $('#matchup-clear-b').on('click', () => clearMatchupPlayer('b'));
+
+        const route = getRouteState();
+        if (route.matchupA && allRatings[route.matchupA]) {
+          selectMatchupPlayer('a', route.matchupA);
+        }
+        if (route.matchupB && allRatings[route.matchupB]) {
+          selectMatchupPlayer('b', route.matchupB);
+        }
+        showTab(route.tab === 'matchup' || (!route.hasTab && (route.matchupA || route.matchupB)) ? 'matchup' : route.tab, { skipRouteSync: true });
+        syncRouteState();
       } catch (err) {
         $('#loading').addClass('hidden');
         $('#error-msg').text(`Failed to load ${file}: ${err.message}. Serve this page from a web server.`);
@@ -1029,17 +1102,24 @@
     // Tour toggle (IRT = men, LPRT = women)
     $('.tour-btn').on('click', function () {
       const id = $(this).attr('id');
+      currentTourId = id;
+      currentTourFile = id === 'tour-lprt' ? 'women_matches.json.gz' : 'matches.json.gz';
       $('.tour-btn').removeClass('bg-emerald-700 text-white').addClass('text-gray-300');
       $(this).addClass('bg-emerald-700 text-white').removeClass('text-gray-300');
-      loadMatches(id === 'tour-lprt' ? 'women_matches.json.gz' : 'matches.json.gz');
+      syncRouteState();
+      loadMatches(currentTourFile);
     });
 
-    loadMatches('matches.json.gz');
+    const initialRoute = getRouteState();
+    currentTourId = initialRoute.tourId;
+    currentTourFile = initialRoute.tourFile;
+    $('.tour-btn').removeClass('bg-emerald-700 text-white').addClass('text-gray-300');
+    $(`#${currentTourId}`).addClass('bg-emerald-700 text-white').removeClass('text-gray-300');
+    loadMatches(currentTourFile);
   });
   // ─────────────────────────────────────────────
   // Matchup Calculator
   // ─────────────────────────────────────────────
-  const matchupState = { a: null, b: null };
 
   function setupMatchupSearch(side) {
     const $input = $(`#matchup-search-${side}`);
@@ -1088,6 +1168,7 @@
     $(`#matchup-card-${side}`).removeClass('hidden');
 
     updateMatchupResult();
+    syncRouteState();
   }
 
   function clearMatchupPlayer(side) {
@@ -1095,6 +1176,16 @@
     $(`#matchup-card-${side}`).addClass('hidden');
     $(`#matchup-search-${side}`).val('');
     $('#matchup-result').addClass('hidden');
+    syncRouteState();
+  }
+
+  function resetMatchupSelection(options = {}) {
+    matchupState.a = null;
+    matchupState.b = null;
+    $('#matchup-card-a, #matchup-card-b, #matchup-result').addClass('hidden');
+    $('#matchup-search-a, #matchup-search-b').val('');
+    $('#matchup-dropdown-a, #matchup-dropdown-b').addClass('hidden').empty();
+    if (!options.skipRouteSync) syncRouteState();
   }
 
   function updateMatchupResult() {
