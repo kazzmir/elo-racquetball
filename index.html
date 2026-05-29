@@ -889,13 +889,13 @@
       params.delete('tab');
     }
 
-    if (matchupState.a) {
+    if (activeTab === 'matchup' && matchupState.a) {
       params.set('matchupA', matchupState.a);
     } else {
       params.delete('matchupA');
     }
 
-    if (matchupState.b) {
+    if (activeTab === 'matchup' && matchupState.b) {
       params.set('matchupB', matchupState.b);
     } else {
       params.delete('matchupB');
