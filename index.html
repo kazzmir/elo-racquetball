@@ -185,31 +185,88 @@
 
       <!-- Result -->
       <div id="matchup-result" class="hidden bg-gray-900 rounded-xl border border-gray-700 p-6">
-        <h3 class="text-center text-sm font-semibold uppercase tracking-widest text-gray-400 mb-5">Predicted Win Probability</h3>
+        <div>
+          <h3 class="text-center text-sm font-semibold uppercase tracking-widest text-gray-400 mb-3">Predicted Win Probability</h3>
+          <div class="text-center text-xs font-semibold uppercase tracking-widest text-gray-500 mb-5">Absolute ELO</div>
 
-        <!-- Probability bar -->
-        <div class="flex items-center gap-3 mb-4">
-          <span id="matchup-pct-a" class="text-2xl font-bold text-blue-400 w-16 text-right"></span>
-          <div class="flex-1 h-7 rounded-full overflow-hidden bg-gray-800 flex">
-            <div id="matchup-bar-a" class="h-full bg-blue-500 transition-all duration-500 flex items-center justify-end pr-2">
+          <div class="flex items-center gap-3 mb-4">
+            <span id="matchup-pct-a" class="text-2xl font-bold text-blue-400 w-16 text-right"></span>
+            <div class="flex-1 h-7 rounded-full overflow-hidden bg-gray-800 flex">
+              <div id="matchup-bar-a" class="h-full bg-blue-500 transition-all duration-500 flex items-center justify-end pr-2">
+              </div>
+              <div id="matchup-bar-b" class="h-full bg-red-500 transition-all duration-500 flex items-center pl-2">
+              </div>
             </div>
-            <div id="matchup-bar-b" class="h-full bg-red-500 transition-all duration-500 flex items-center pl-2">
+            <span id="matchup-pct-b" class="text-2xl font-bold text-red-400 w-16"></span>
+          </div>
+
+          <div class="flex justify-between text-sm text-gray-400 px-1 mb-6">
+            <span id="matchup-label-a"></span>
+            <span id="matchup-label-b" class="text-right"></span>
+          </div>
+
+          <p id="matchup-summary" class="text-center text-gray-300 text-sm leading-relaxed"></p>
+        </div>
+
+        <div class="mt-6 border-t border-gray-800 pt-6">
+          <h4 class="text-center text-xs font-semibold uppercase tracking-widest text-gray-400 mb-4">Head-to-Head Snapshot</h4>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <div class="bg-gray-800 rounded-xl border border-gray-700 p-4">
+              <div class="flex items-center justify-between mb-3">
+                <span id="matchup-h2h-name-a" class="font-semibold text-white"></span>
+                <span class="text-xs font-semibold uppercase tracking-widest text-blue-400">Player A</span>
+              </div>
+              <div class="grid grid-cols-2 gap-3 text-center">
+                <div class="bg-gray-900 rounded-lg py-3">
+                  <div id="matchup-h2h-record-a" class="text-sm font-semibold text-white"></div>
+                  <div class="text-xs text-gray-500 mt-1">H2H Record</div>
+                </div>
+                <div class="bg-gray-900 rounded-lg py-3">
+                  <div id="matchup-h2h-elo-a" class="text-xl font-bold text-blue-400"></div>
+                  <div class="text-xs text-gray-500 mt-1">H2H ELO</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="bg-gray-800 rounded-xl border border-gray-700 p-4">
+              <div class="flex items-center justify-between mb-3">
+                <span id="matchup-h2h-name-b" class="font-semibold text-white"></span>
+                <span class="text-xs font-semibold uppercase tracking-widest text-red-400">Player B</span>
+              </div>
+              <div class="grid grid-cols-2 gap-3 text-center">
+                <div class="bg-gray-900 rounded-lg py-3">
+                  <div id="matchup-h2h-record-b" class="text-sm font-semibold text-white"></div>
+                  <div class="text-xs text-gray-500 mt-1">H2H Record</div>
+                </div>
+                <div class="bg-gray-900 rounded-lg py-3">
+                  <div id="matchup-h2h-elo-b" class="text-xl font-bold text-red-400"></div>
+                  <div class="text-xs text-gray-500 mt-1">H2H ELO</div>
+                </div>
+              </div>
             </div>
           </div>
-          <span id="matchup-pct-b" class="text-2xl font-bold text-red-400 w-16"></span>
+
+          <div class="text-center text-xs font-semibold uppercase tracking-widest text-gray-500 mb-5">Head-to-Head ELO</div>
+          <div class="flex items-center gap-3 mb-4">
+            <span id="matchup-h2h-pct-a" class="text-2xl font-bold text-blue-400 w-16 text-right"></span>
+            <div class="flex-1 h-7 rounded-full overflow-hidden bg-gray-800 flex">
+              <div id="matchup-h2h-bar-a" class="h-full bg-blue-500 transition-all duration-500 flex items-center justify-end pr-2">
+              </div>
+              <div id="matchup-h2h-bar-b" class="h-full bg-red-500 transition-all duration-500 flex items-center pl-2">
+              </div>
+            </div>
+            <span id="matchup-h2h-pct-b" class="text-2xl font-bold text-red-400 w-16"></span>
+          </div>
+
+          <div class="flex justify-between text-sm text-gray-400 px-1 mb-6">
+            <span id="matchup-h2h-label-a"></span>
+            <span id="matchup-h2h-label-b" class="text-right"></span>
+          </div>
+
+          <p id="matchup-h2h-summary" class="text-center text-gray-300 text-sm leading-relaxed"></p>
         </div>
 
-        <!-- Names under bar -->
-        <div class="flex justify-between text-sm text-gray-400 px-1 mb-6">
-          <span id="matchup-label-a"></span>
-          <span id="matchup-label-b" class="text-right"></span>
-        </div>
-
-        <!-- Interpretation -->
-        <p id="matchup-summary" class="text-center text-gray-300 text-sm leading-relaxed"></p>
-
-        <!-- Head-to-head history -->
-        <div id="matchup-h2h" class="mt-6 hidden">
+        <div id="matchup-h2h" class="mt-6 border-t border-gray-800 pt-6">
           <h4 class="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-3">Head-to-Head History</h4>
           <div id="matchup-h2h-body" class="space-y-1.5"></div>
         </div>
@@ -255,6 +312,28 @@
 
   function expectedScore(ra, rb) {
     return 1 / (1 + Math.pow(10, (rb - ra) / 400));
+  }
+
+  function probabilitySummary(nameA, nameB, pctA, pctB, eloA, eloB, label) {
+    if (Math.abs(pctA - pctB) < 0.02) {
+      return `This is essentially a coin flip — both players are evenly matched by ${label}.`;
+    }
+    const favorite = pctA >= pctB ? nameA : nameB;
+    const favPct = Math.max(pctA, pctB);
+    return `<strong class="text-white">${escHtml(favorite)}</strong> is the favourite with a <strong class="text-white">${(favPct * 100).toFixed(1)}%</strong> chance of winning based on ${label} (${eloA} vs ${eloB}).`;
+  }
+
+  function renderProbabilityBar(section, pctA, pctB, nameA, nameB) {
+    const prefix = section ? `#matchup-${section}-` : '#matchup-';
+    const pctAStr = (pctA * 100).toFixed(1) + '%';
+    const pctBStr = (pctB * 100).toFixed(1) + '%';
+
+    $(`${prefix}pct-a`).text(pctAStr);
+    $(`${prefix}pct-b`).text(pctBStr);
+    $(`${prefix}bar-a`).css('width', (pctA * 100).toFixed(1) + '%');
+    $(`${prefix}bar-b`).css('width', (pctB * 100).toFixed(1) + '%');
+    $(`${prefix}label-a`).text(nameA);
+    $(`${prefix}label-b`).text(nameB);
   }
 
   // ageAdjustment returns the ELO delta to apply to each player's *effective* ELO before
@@ -775,11 +854,64 @@
   // ─────────────────────────────────────────────
   // Tab switching
   // ─────────────────────────────────────────────
-  function showTab(tab) {
+  const matchupState = { a: null, b: null };
+  let activeTab = 'standings';
+  let currentTourFile = 'matches.json.gz';
+  let currentTourId = 'tour-irt';
+
+  function getRouteState() {
+    const params = new URLSearchParams(window.location.search);
+    const tab = params.get('tab');
+    const tour = params.get('tour');
+    return {
+      hasTab: params.has('tab'),
+      tab: ['standings', 'matches', 'matchup'].includes(tab) ? tab : 'standings',
+      tourFile: tour === 'lprt' ? 'women_matches.json.gz' : 'matches.json.gz',
+      tourId: tour === 'lprt' ? 'tour-lprt' : 'tour-irt',
+      matchupA: params.get('matchupA'),
+      matchupB: params.get('matchupB'),
+    };
+  }
+
+  function syncRouteState() {
+    const url = new URL(window.location.href);
+    const params = url.searchParams;
+
+    if (currentTourId === 'tour-lprt') {
+      params.set('tour', 'lprt');
+    } else {
+      params.delete('tour');
+    }
+
+    if (activeTab !== 'standings') {
+      params.set('tab', activeTab);
+    } else {
+      params.delete('tab');
+    }
+
+    if (activeTab === 'matchup' && matchupState.a) {
+      params.set('matchupA', matchupState.a);
+    } else {
+      params.delete('matchupA');
+    }
+
+    if (activeTab === 'matchup' && matchupState.b) {
+      params.set('matchupB', matchupState.b);
+    } else {
+      params.delete('matchupB');
+    }
+
+    const search = params.toString();
+    history.replaceState(history.state, '', `${url.pathname}${search ? `?${search}` : ''}${url.hash}`);
+  }
+
+  function showTab(tab, options = {}) {
+    activeTab = tab;
     $('.tab-btn').removeClass('bg-blue-600 text-white').addClass('text-gray-300 hover:bg-gray-700');
     $(`#tab-${tab}`).addClass('bg-blue-600 text-white').removeClass('text-gray-300 hover:bg-gray-700');
     $('#view-standings, #view-matches, #view-matchup').addClass('hidden');
     $(`#view-${tab}`).removeClass('hidden');
+    if (!options.skipRouteSync) syncRouteState();
   }
 
   // ─────────────────────────────────────────────
@@ -868,10 +1000,20 @@
         renderStandings();
         allMatchResults = tourCache[file].allMatchResults;
         renderMatchPage();
+        resetMatchupSelection({ skipRouteSync: true });
         setupMatchupSearch('a');
         setupMatchupSearch('b');
         $('#matchup-clear-a').on('click', () => clearMatchupPlayer('a'));
         $('#matchup-clear-b').on('click', () => clearMatchupPlayer('b'));
+        const route = getRouteState();
+        if (route.matchupA && allRatings[route.matchupA]) {
+          selectMatchupPlayer('a', route.matchupA);
+        }
+        if (route.matchupB && allRatings[route.matchupB]) {
+          selectMatchupPlayer('b', route.matchupB);
+        }
+        showTab(route.tab === 'matchup' || (!route.hasTab && (route.matchupA || route.matchupB)) ? 'matchup' : route.tab, { skipRouteSync: true });
+        syncRouteState();
         return;
       }
 
@@ -926,7 +1068,7 @@
         renderMatchPage();
 
         $('#loading').addClass('hidden');
-        showTab('standings');
+        resetMatchupSelection({ skipRouteSync: true });
 
         // Open player panel if URL contains a deep-link hash
         const hash = window.location.hash;
@@ -940,6 +1082,16 @@
         setupMatchupSearch('b');
         $('#matchup-clear-a').on('click', () => clearMatchupPlayer('a'));
         $('#matchup-clear-b').on('click', () => clearMatchupPlayer('b'));
+
+        const route = getRouteState();
+        if (route.matchupA && allRatings[route.matchupA]) {
+          selectMatchupPlayer('a', route.matchupA);
+        }
+        if (route.matchupB && allRatings[route.matchupB]) {
+          selectMatchupPlayer('b', route.matchupB);
+        }
+        showTab(route.tab === 'matchup' || (!route.hasTab && (route.matchupA || route.matchupB)) ? 'matchup' : route.tab, { skipRouteSync: true });
+        syncRouteState();
       } catch (err) {
         $('#loading').addClass('hidden');
         $('#error-msg').text(`Failed to load ${file}: ${err.message}. Serve this page from a web server.`);
@@ -950,17 +1102,24 @@
     // Tour toggle (IRT = men, LPRT = women)
     $('.tour-btn').on('click', function () {
       const id = $(this).attr('id');
+      currentTourId = id;
+      currentTourFile = id === 'tour-lprt' ? 'women_matches.json.gz' : 'matches.json.gz';
       $('.tour-btn').removeClass('bg-emerald-700 text-white').addClass('text-gray-300');
       $(this).addClass('bg-emerald-700 text-white').removeClass('text-gray-300');
-      loadMatches(id === 'tour-lprt' ? 'women_matches.json.gz' : 'matches.json.gz');
+      syncRouteState();
+      loadMatches(currentTourFile);
     });
 
-    loadMatches('matches.json.gz');
+    const initialRoute = getRouteState();
+    currentTourId = initialRoute.tourId;
+    currentTourFile = initialRoute.tourFile;
+    $('.tour-btn').removeClass('bg-emerald-700 text-white').addClass('text-gray-300');
+    $(`#${currentTourId}`).addClass('bg-emerald-700 text-white').removeClass('text-gray-300');
+    loadMatches(currentTourFile);
   });
   // ─────────────────────────────────────────────
   // Matchup Calculator
   // ─────────────────────────────────────────────
-  const matchupState = { a: null, b: null };
 
   function setupMatchupSearch(side) {
     const $input = $(`#matchup-search-${side}`);
@@ -1009,6 +1168,7 @@
     $(`#matchup-card-${side}`).removeClass('hidden');
 
     updateMatchupResult();
+    syncRouteState();
   }
 
   function clearMatchupPlayer(side) {
@@ -1016,6 +1176,16 @@
     $(`#matchup-card-${side}`).addClass('hidden');
     $(`#matchup-search-${side}`).val('');
     $('#matchup-result').addClass('hidden');
+    syncRouteState();
+  }
+
+  function resetMatchupSelection(options = {}) {
+    matchupState.a = null;
+    matchupState.b = null;
+    $('#matchup-card-a, #matchup-card-b, #matchup-result').addClass('hidden');
+    $('#matchup-search-a, #matchup-search-b').val('');
+    $('#matchup-dropdown-a, #matchup-dropdown-b').addClass('hidden').empty();
+    if (!options.skipRouteSync) syncRouteState();
   }
 
   function updateMatchupResult() {
@@ -1025,39 +1195,45 @@
     const pa = allRatings[nameA], pb = allRatings[nameB];
     const pctA = expectedScore(pa.elo, pb.elo);
     const pctB = 1 - pctA;
-
-    const pctAStr = (pctA * 100).toFixed(1) + '%';
-    const pctBStr = (pctB * 100).toFixed(1) + '%';
-
-    $('#matchup-pct-a').text(pctAStr);
-    $('#matchup-pct-b').text(pctBStr);
-    $('#matchup-bar-a').css('width', (pctA * 100).toFixed(1) + '%');
-    $('#matchup-bar-b').css('width', (pctB * 100).toFixed(1) + '%');
-    $('#matchup-label-a').text(nameA);
-    $('#matchup-label-b').text(nameB);
-
-    // Summary sentence
-    const favorite = pctA >= pctB ? nameA : nameB;
-    const favPct = Math.max(pctA, pctB);
-    let summary;
-    if (Math.abs(pctA - pctB) < 0.02) {
-      summary = `This is essentially a coin flip — both players are evenly matched.`;
-    } else {
-      summary = `<strong class="text-white">${escHtml(favorite)}</strong> is the favourite with a <strong class="text-white">${(favPct * 100).toFixed(1)}%</strong> chance of winning based on current ELO ratings (${pa.elo} vs ${pb.elo}).`;
-    }
-    $('#matchup-summary').html(summary);
+    renderProbabilityBar('', pctA, pctB, nameA, nameB);
+    $('#matchup-summary').html(probabilitySummary(nameA, nameB, pctA, pctB, pa.elo, pb.elo, 'current absolute ELO ratings'));
 
     // Head-to-head history
     const h2h = allMatchResults.filter(m =>
       (m.winner === nameA && m.loser === nameB) ||
       (m.winner === nameB && m.loser === nameA)
     );
+    const winsA = h2h.filter(m => m.winner === nameA).length;
+    const winsB = h2h.length - winsA;
+
+    $('#matchup-h2h-name-a').text(nameA);
+    $('#matchup-h2h-name-b').text(nameB);
+    $('#matchup-h2h-record-a').text(`${winsA}W–${winsB}L`);
+    $('#matchup-h2h-record-b').text(`${winsB}W–${winsA}L`);
+
+    const h2hChronological = h2h
+      .slice()
+      .sort((a, b) => parseDate(a.date) - parseDate(b.date))
+      .map(m => ({ date: m.date, winner: m.winner, loser: m.loser }));
+    const { ratings: h2hRatings } = computeElo(null, null, h2hChronological);
+    const h2hEloA = h2hRatings[nameA]?.elo ?? INITIAL_ELO;
+    const h2hEloB = h2hRatings[nameB]?.elo ?? INITIAL_ELO;
+    const h2hPctA = expectedScore(h2hEloA, h2hEloB);
+    const h2hPctB = 1 - h2hPctA;
+
+    $('#matchup-h2h-elo-a').text(h2hEloA);
+    $('#matchup-h2h-elo-b').text(h2hEloB);
+    renderProbabilityBar('h2h', h2hPctA, h2hPctB, nameA, nameB);
 
     if (h2h.length) {
-      const winsA = h2h.filter(m => m.winner === nameA).length;
-      const winsB = h2h.length - winsA;
-      const h2hBody = $('#matchup-h2h-body').empty();
-      $(`<div class="text-sm text-gray-400 mb-2">${escHtml(nameA)} leads <strong class="text-white">${winsA}–${winsB}</strong> in ${h2h.length} head-to-head match${h2h.length > 1 ? 'es' : ''}.</div>`).appendTo(h2hBody);
+      $('#matchup-h2h-summary').html(probabilitySummary(nameA, nameB, h2hPctA, h2hPctB, h2hEloA, h2hEloB, 'their head-to-head ELO ratings'));
+    } else {
+      $('#matchup-h2h-summary').text('No prior meetings yet — head-to-head ELO is neutral, so this projects as a 50/50 matchup.');
+    }
+
+    const h2hBody = $('#matchup-h2h-body').empty();
+    if (h2h.length) {
+      $(`<div class="text-sm text-gray-400 mb-2">${escHtml(nameA)} ${winsA === winsB ? 'is tied' : winsA > winsB ? 'leads' : 'trails'} <strong class="text-white">${winsA}–${winsB}</strong> in ${h2h.length} head-to-head match${h2h.length > 1 ? 'es' : ''}.</div>`).appendTo(h2hBody);
       h2h.forEach(m => {
         const wonByA = m.winner === nameA;
         h2hBody.append(`<div class="flex items-center justify-between px-3 py-1.5 rounded bg-gray-800 text-sm">
@@ -1066,9 +1242,8 @@
           <span class="px-2 py-0.5 rounded text-xs font-bold ${wonByA ? 'bg-blue-900 text-blue-300' : 'bg-red-900 text-red-300'} ml-2">WIN</span>
         </div>`);
       });
-      $('#matchup-h2h').removeClass('hidden');
     } else {
-      $('#matchup-h2h').addClass('hidden');
+      h2hBody.append(`<div class="text-sm text-gray-400">No head-to-head matches found between <span class="text-white">${escHtml(nameA)}</span> and <span class="text-white">${escHtml(nameB)}</span>.</div>`);
     }
 
     $('#matchup-result').removeClass('hidden');
